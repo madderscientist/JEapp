@@ -1,0 +1,174 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:toastification/toastification.dart';
+import '../config.dart';
+import '../utils/action.dart';
+import '../utils/file.dart';
+import '../theme.dart';
+
+class Settings extends StatefulWidget {
+  const Settings({super.key});
+
+  @override
+  State<Settings> createState() => _SettingsState();
+}
+
+class _SettingsState extends State<Settings> {
+  final ValueNotifier<String> localScorePath = ValueNotifier('');
+  final ValueNotifier<bool> showBannerInput = ValueNotifier(
+    Config.networkBanner,
+  );
+  final TextEditingController _bannerController = TextEditingController(text: Config.networkBannerURL);
+
+  @override
+  void initState() {
+    super.initState();
+    // 初始化本地曲谱路径
+    FileUtils.publicPath.then((path) {
+      localScorePath.value = '$path/${Config.localScorePath}';
+    });
+  }
+
+  @override
+  void dispose() {
+    localScorePath.dispose();
+    _bannerController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildVersion() {
+    return ListTile(
+      title: const Text('检查更新'),
+      onTap: () {
+
+      },
+    );
+  }
+
+  Widget _buildLocalPath(BuildContext context) {
+    return ValueListenableBuilder<String>(
+      valueListenable: localScorePath,
+      builder: (context, value, child) {
+        return ListTile(
+          title: const Text('本地曲谱存储路径'),
+          subtitle: Text(value),
+          onTap: () async {
+            openFolder(value);
+          },
+          onLongPress: () async {
+            await Clipboard.setData(ClipboardData(text: value));
+            if (context.mounted) {
+              toastification.show(
+                context: context,
+                style: ToastificationStyle.simple,
+                title: Text("已复制 (￣▽￣)V"),
+                backgroundColor: Colors.black54,
+                foregroundColor: Colors.white,
+                alignment: Alignment.bottomCenter,
+                autoCloseDuration: const Duration(seconds: 2),
+                borderRadius: BorderRadius.circular(12.0),
+                showProgressBar: false,
+                dragToClose: true,
+                applyBlurEffect: false,
+              );
+            }
+          },
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildHomeBanner(BuildContext context) {
+    return [
+      ValueListenableBuilder<bool>(
+        valueListenable: showBannerInput,
+        builder: (context, showInput, child) {
+          return SwitchListTile(
+            title: const Text('主页使用网络图片'),
+            value: showInput,
+            onChanged: (bool value) {
+              showBannerInput.value = value;
+              Config.networkBanner = value;
+              toastification.show(
+                context: context,
+                style: ToastificationStyle.simple,
+                title: Text('重启应用才生效哦~'),
+                backgroundColor: Colors.black54,
+                foregroundColor: Colors.white,
+                alignment: Alignment.bottomCenter,
+                autoCloseDuration: const Duration(seconds: 2),
+                borderRadius: BorderRadius.circular(12.0),
+                showProgressBar: false,
+                dragToClose: true,
+                applyBlurEffect: false,
+              );
+            },
+          );
+        },
+      ),
+      AnimatedSize(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: ValueListenableBuilder<bool>(
+            valueListenable: showBannerInput,
+            builder: (context, showInput, child) {
+              return showInput
+                  ? Padding(
+                      key: const ValueKey('networkBannerInput'),
+                      padding: const EdgeInsets.only(
+                        left: 16.0,
+                        right: 16.0,
+                        bottom: 10.0,
+                      ),
+                      child: TextField(
+                        controller: _bannerController,
+                        decoration: InputDecoration(
+                          labelText: '图片api',
+                          hintText: Config.networkBannerURL,
+                          hintStyle: TextStyle(
+                            color: AppTheme.color.withAlpha(128),
+                          ),
+                        ),
+                        onTapOutside: (event) {
+                          FocusScope.of(context).unfocus();
+                          Config.networkBannerURL = _bannerController.text.trim();
+                        },
+                      ),
+                    )
+                  : const SizedBox.shrink();
+            },
+          ),
+        ),
+      ),
+    ];
+  }
+
+  static const _divider = Divider(
+    height: 1,
+    thickness: 1,
+    indent: 16,
+    endIndent: 16,
+    color: Colors.grey,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('设置')),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildVersion(),
+            _divider,
+            _buildLocalPath(context),
+            _divider,
+            ..._buildHomeBanner(context),
+            _divider,
+          ],
+        ),
+      ),
+    );
+  }
+}
