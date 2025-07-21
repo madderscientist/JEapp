@@ -33,7 +33,13 @@ class IssueRequester {
     final String url = _nextUrl.isEmpty
         ? "$baseUrl?per_page=$perPage&page=$pageNext"
         : _nextUrl;
-    final response = await _client.get(Uri.parse(url));
+    final http.Response response;
+    try {
+      response = await _client.get(Uri.parse(url));
+    } catch (e) {
+      isLoading = false;
+      throw Exception("网络请求失败了 ╥﹏╥");
+    }
     isLoading = false;
 
     if (response.statusCode != 200) {

@@ -405,7 +405,7 @@ class _DetailState extends State<Detail> {
       type: ToastificationType.error,
       style: ToastificationStyle.flatColored,
       title: const Text('保存失败'),
-      description: Text(e.toString()),
+      description: Text(e.toString().split(':').last),
       alignment: Alignment.bottomCenter,
       autoCloseDuration: const Duration(seconds: 3),
       borderRadius: BorderRadius.circular(12.0),

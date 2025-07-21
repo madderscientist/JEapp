@@ -1,9 +1,10 @@
 import 'package:url_launcher/url_launcher.dart';
+export 'package:url_launcher/url_launcher.dart' show LaunchMode;
 
-Future<bool> launchUrlWrap(String url) async {
+Future<bool> launchUrlWrap(String url, [LaunchMode mode = LaunchMode.externalApplication]) async {
   final Uri uri = Uri.parse(url);
   if (await canLaunchUrl(uri)) {
-    return launchUrl(uri, mode: LaunchMode.externalApplication);
+    return launchUrl(uri, mode: mode);
   }
   throw Exception('Could not launch $url');
 }

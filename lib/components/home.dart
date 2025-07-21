@@ -115,11 +115,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       setState(() => _scores.addAll(result));
     } catch (e) {
       if (!context.mounted) return;
+      setState(() {});
       toastification.show(
         context: context,
         type: ToastificationType.error,
         style: ToastificationStyle.flatColored,
-        title: Text(e.toString()),
+        title: Text(e.toString().split(':').last),
         alignment: Alignment.topCenter,
         autoCloseDuration: const Duration(seconds: 3),
         borderRadius: BorderRadius.circular(12.0),
@@ -131,8 +132,29 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget get _buttomTip {
-    if (_scores.isEmpty || _issueRequester.isLoading) {
+    if (_issueRequester.isLoading) {
       return Center(child: CircularProgressIndicator());
+    }
+    if (_scores.isEmpty) {
+      return Column(
+        children: [
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _fetchScores(context, reset: true);
+              });
+            },
+            child: Image.asset(
+              'assets/error.png',
+              width: MediaQuery.of(context).size.width / 1.8,
+            ),
+          ),
+          const Text(
+            '啊哦，网络出问题了\n点击图片重试',
+            textAlign: TextAlign.center,
+          ),
+        ],
+      );
     }
     if (_issueRequester.hasNext) {
       return SizedBox(

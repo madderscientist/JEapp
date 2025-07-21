@@ -58,3 +58,6 @@ https://book.flutterchina.club/chapter15/globals.html#_15-4-1-%E5%85%A8%E5%B1%80
 
 ## 小米底部手势栏透明
 在 `android/app/src/main/res/values/styles.xml` 加入 `<item name="android:windowTranslucentNavigation">true</item>`
+
+## github 登录
+由于要向第三方仓库发送issue，只能用Oauth App而不是Github App。由于没有后端，而且不能将Client secret写在代码中（会泄露），所以只能使用`Enable Device Flow`。

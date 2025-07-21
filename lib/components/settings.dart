@@ -18,7 +18,9 @@ class _SettingsState extends State<Settings> {
   final ValueNotifier<bool> showBannerInput = ValueNotifier(
     Config.networkBanner,
   );
-  final TextEditingController _bannerController = TextEditingController(text: Config.networkBannerURL);
+  final TextEditingController _bannerController = TextEditingController(
+    text: Config.networkBannerURL,
+  );
 
   @override
   void initState() {
@@ -37,12 +39,7 @@ class _SettingsState extends State<Settings> {
   }
 
   Widget _buildVersion() {
-    return ListTile(
-      title: const Text('检查更新'),
-      onTap: () {
-
-      },
-    );
+    return ListTile(title: const Text('检查更新'), onTap: () {});
   }
 
   Widget _buildLocalPath(BuildContext context) {
@@ -133,7 +130,8 @@ class _SettingsState extends State<Settings> {
                         ),
                         onTapOutside: (event) {
                           FocusScope.of(context).unfocus();
-                          Config.networkBannerURL = _bannerController.text.trim();
+                          Config.networkBannerURL = _bannerController.text
+                              .trim();
                         },
                       ),
                     )
@@ -143,6 +141,29 @@ class _SettingsState extends State<Settings> {
         ),
       ),
     ];
+  }
+
+  Widget _buildLogOut(BuildContext context) {
+    return ListTile(
+      title: const Text('退出登录'),
+      onTap: () {
+        Config.githubToken = null;
+        toastification.show(
+          context: context,
+          type: ToastificationType.info,
+          style: ToastificationStyle.fillColored,
+          title: const Text('已退出登录'),
+          backgroundColor: Colors.black54,
+          foregroundColor: Colors.white,
+          alignment: Alignment.bottomCenter,
+          autoCloseDuration: const Duration(seconds: 2),
+          borderRadius: BorderRadius.circular(12.0),
+          showProgressBar: false,
+          dragToClose: true,
+          applyBlurEffect: false,
+        );
+      },
+    );
   }
 
   static const _divider = Divider(
@@ -166,6 +187,7 @@ class _SettingsState extends State<Settings> {
             _divider,
             ..._buildHomeBanner(context),
             _divider,
+            _buildLogOut(context),
           ],
         ),
       ),

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:path/path.dart' as p;
 import '../config.dart';
 import '../theme.dart';
 import 'detail.dart';
+import 'github_login.dart';
 import 'settings.dart';
 import '../utils/image.dart' show ImageUtils;
 
@@ -89,6 +91,89 @@ class _MineState extends State<Mine> {
     }
   }
 
+  void _issue(File f, BuildContext context) async {
+    if (Config.githubToken.isEmpty) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) {
+            ImageUtils.uiResult({
+              'isSuccess': null,
+              'title': '你还未登录GitHub账号',
+              'message': '进入登录流程！',
+            }, context);
+            return const GitHubLogin();
+          },
+        ),
+      );
+      if (!context.mounted) return;
+    }
+    final token = Config.githubToken;
+    if (token.isEmpty) {
+      ImageUtils.uiResult({
+        'isSuccess': false,
+        'title': '发布失败',
+        'message': '请先登录GitHub账号',
+      }, context);
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('发布到谱库'),
+        content: const Text('请确认曲谱没有重复'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('发布'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == false) return;
+    final title = p.basenameWithoutExtension(f.path);
+    final body = await f.readAsString();
+    if (!context.mounted) return;
+    // 显示全屏加载动画
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+    createIssue(token, title, body)
+        .then((response) {
+          if (!context.mounted) return;
+          if (response.statusCode == 201) {
+            ImageUtils.uiResult({
+              'isSuccess': true,
+              'title': '发布成功',
+              'message': '《$title》已发布到谱库',
+            }, context);
+          } else {
+            ImageUtils.uiResult({
+              'isSuccess': false,
+              'title': '发布失败',
+              'message': '${response.statusCode} ${response.body}',
+            }, context);
+          }
+        })
+        .catchError((e) {
+          if (!context.mounted) return;
+          ImageUtils.uiResult({
+            'isSuccess': false,
+            'title': '发布失败',
+            'message': e.toString(),
+          }, context);
+        })
+        .whenComplete(() {
+          if (!context.mounted) return;
+          Navigator.of(context, rootNavigator: true).pop();
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     const double appBarHeight = 190; // AppBar的最大高度[不包括状态栏]
@@ -159,57 +244,97 @@ class _MineState extends State<Mine> {
                     ),
                   ),
                   // 头像和文字
-                  Positioned(
-                    left: 24,
-                    top: avatarTop,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: avatarSize,
-                          height: avatarSize,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            image: DecorationImage(
-                              image: AssetImage('assets/icon.png'),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 16),
-                        AnimatedSize(
-                          duration: Duration(milliseconds: 330),
-                          curve: Curves.easeInOut,
-                          child: AnimatedSwitcher(
-                            duration: Duration(milliseconds: 330),
-                            transitionBuilder: (child, animation) =>
-                                FadeTransition(
-                                  opacity: animation,
-                                  child: child,
+                  ValueListenableBuilder<UserInfo?>(
+                    valueListenable: Config.userInfoNotifier,
+                    builder: (context, userinfo, _) {
+                      late final ImageProvider imageProvider;
+                      late final String userName;
+                      late final Widget smallInfo;
+                      final smallStyle = Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey);
+                      if (userinfo == null) {
+                        imageProvider = const AssetImage('assets/icon.png');
+                        userName = '未登录的JE酱';
+                        smallInfo = GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const GitHubLogin(),
+                              ),
+                            );
+                          },
+                          child: Text('点我登录', style: smallStyle),
+                        );
+                      } else {
+                        imageProvider = CachedNetworkImageProvider(
+                          userinfo.avatarUrl,
+                        );
+                        userName = userinfo.name.isNotEmpty
+                            ? userinfo.name
+                            : userinfo.login;
+                        smallInfo = Text(userinfo.login, style: smallStyle);
+                      }
+                      return Positioned(
+                        left: 24,
+                        top: avatarTop,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: avatarSize,
+                              height: avatarSize,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                image: DecorationImage(
+                                  image: imageProvider,
+                                  fit: BoxFit.cover,
                                 ),
-                            child: percent > threshold
-                                ? Text(
-                                    'JE酱',
-                                    key: ValueKey('JE'),
-                                    style: TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
+                              ),
+                            ),
+                            SizedBox(width: 16),
+                            AnimatedSize(
+                              duration: Duration(milliseconds: 330),
+                              curve: Curves.easeInOut,
+                              child: AnimatedSwitcher(
+                                duration: Duration(milliseconds: 330),
+                                transitionBuilder: (child, animation) =>
+                                    FadeTransition(
+                                      opacity: animation,
+                                      child: child,
                                     ),
-                                  )
-                                : Text(
-                                    '我的曲谱',
-                                    key: ValueKey('mine'),
-                                    style: TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                          ),
+                                child: percent > threshold
+                                    ? Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            userName,
+                                            key: ValueKey(userName),
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                          smallInfo,
+                                        ],
+                                      )
+                                    : Text(
+                                        '我的曲谱',
+                                        key: ValueKey('mine'),
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                   // 设置按钮 颜色渐变
                   Positioned(
@@ -224,26 +349,21 @@ class _MineState extends State<Mine> {
                         end: percent < threshold ? Colors.white : purple,
                       ),
                       duration: Duration(milliseconds: 330),
-                      builder: (context, color, child) =>
-                          SizedBox(
-                            width: headIconSize,
-                            height: headIconSize,
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.settings,
-                                size: 28,
-                                color: color,
+                      builder: (context, color, child) => SizedBox(
+                        width: headIconSize,
+                        height: headIconSize,
+                        child: IconButton(
+                          icon: Icon(Icons.settings, size: 28, color: color),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const Settings(),
                               ),
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => const Settings(),
-                                  ),
-                                );
-                              },
-                              padding: EdgeInsets.zero,
-                            ),
-                          ),
+                            );
+                          },
+                          padding: EdgeInsets.zero,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -369,12 +489,17 @@ class _MineState extends State<Mine> {
                 final file = files[fileIdx];
                 final name = p.basenameWithoutExtension(file.path);
                 final date = file.statSync().modified;
-                final inner = Slidable(
-                  key: ValueKey(file.path),
-                  endActionPane: ActionPane(
-                    motion: DrawerMotion(),
-                    extentRatio: 0.2 * 2,
-                    children: [
+                final slidableActions = [
+                      SlidableAction(
+                        padding: EdgeInsets.all(0),
+                        onPressed: (context) {
+                          _issue(file, context);
+                        },
+                        backgroundColor: Colors.greenAccent,
+                        foregroundColor: Colors.white,
+                        icon: Icons.upload,
+                        label: '上传',
+                      ),
                       SlidableAction(
                         padding: EdgeInsets.all(0),
                         onPressed: (context) {
@@ -395,7 +520,13 @@ class _MineState extends State<Mine> {
                         icon: Icons.delete,
                         label: '删除',
                       ),
-                    ],
+                    ];
+                final inner = Slidable(
+                  key: ValueKey(file.path),
+                  endActionPane: ActionPane(
+                    motion: DrawerMotion(),
+                    extentRatio: 0.2 * slidableActions.length,
+                    children: slidableActions,
                   ),
                   child: ListTile(
                     dense: true,

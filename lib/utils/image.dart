@@ -116,7 +116,11 @@ class ImageUtils {
         throw Exception(result['errorMessage'] ?? '保存失败，未知错误');
       }
     } catch (e) {
-      return {'isSuccess': false, 'message': e.toString(), 'title': '保存失败'};
+      return {
+        'isSuccess': false,
+        'message': e.toString().split(':').last,
+        'title': '保存失败',
+      };
     }
   }
 
@@ -142,7 +146,9 @@ class ImageUtils {
     } else {
       toastification.show(
         context: context,
-        type: type == null ? ToastificationType.warning : ToastificationType.error,
+        type: type == null
+            ? ToastificationType.warning
+            : ToastificationType.error,
         style: ToastificationStyle.flatColored,
         title: title == null ? null : Text(title),
         description: message == null ? null : Text(message),
@@ -263,7 +269,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
           if (!context.mounted) return;
           ImageUtils.uiResult({
             'isSuccess': false,
-            'message': e.toString(),
+            'message': e.toString().split(':').last,
             'title': '转换失败',
           }, context);
         })

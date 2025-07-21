@@ -1,7 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:je/utils/file.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'utils/list_notifier.dart';
+import 'components/github_login.dart' show UserInfo;
 
 export 'utils/list_notifier.dart';
 
@@ -24,7 +26,14 @@ class Config {
   static const String _keyboardHeightKey = 'keyboardHeight';
   static const String _networkBannerKey = 'networkBanner';
   static const String _networkBannerURLKey = 'networkBannerURL';
+  static const String _githubTokenKey = 'githubToken';
+  static const String _userInfoKey = 'userInfo';
 
+  /// 供 Mine 监听 url要用cached_network_image缓存
+  static final ValueNotifier<UserInfo?> userInfoNotifier =
+      ValueNotifier<UserInfo?>(null);
+
+  /// 供 Search 监听
   static final ListNotifier<String> history = ListNotifier([]);
 
   static Future<void> init() {
@@ -39,11 +48,32 @@ class Config {
           _historyKey,
           _networkBannerKey,
           _networkBannerURLKey,
+          _githubTokenKey,
+          _userInfoKey,
         },
       ),
     ).then((pref_) {
       pref = pref_;
       history.value = pref_.getStringList(_historyKey) ?? [];
+      {
+        final userInfo = pref_.getString(_userInfoKey);
+        if (userInfo != null && userInfo.isNotEmpty) {
+          userInfoNotifier.value = UserInfo.fromJson(userInfo);
+        } else {
+          userInfoNotifier.value = null;
+        }
+        // 试图刷新 userInfo
+        final token = pref_.getString(_githubTokenKey);
+        if (token != null && token.isNotEmpty) {
+          UserInfo.fromGithub(token)
+              .then((userInfo) {
+                userInfoNotifier.value = userInfo;
+                pref.setString(_userInfoKey, userInfo.toJson());
+              })
+              // 刷新不了就不管了
+              .catchError((_) {});
+        }
+      }
     });
   }
 
@@ -99,6 +129,34 @@ class Config {
       pref.remove(_networkBannerURLKey);
     } else {
       pref.setString(_networkBannerURLKey, value);
+    }
+  }
+
+  /// @brief 获取github token
+  static String get githubToken {
+    return pref.getString(_githubTokenKey) ?? '';
+  }
+
+  /// @brief 设置github token 会响应userInfo 删除则传入null
+  /// 会固定刷新userInfo
+  static set githubToken(String? token) {
+    if (token == null || token.isEmpty) {
+      pref.remove(_githubTokenKey);
+      pref.remove(_userInfoKey);
+      userInfoNotifier.value = null;
+    } else {
+      if (token != githubToken) {
+        pref.setString(_githubTokenKey, token);
+        UserInfo.fromGithub(token)
+            .then((userInfo) {
+              userInfoNotifier.value = userInfo;
+              pref.setString(_userInfoKey, userInfo.toJson());
+            })
+            .catchError((_) {
+              userInfoNotifier.value = null;
+              pref.remove(_userInfoKey);
+            });
+      }
     }
   }
 
