@@ -49,10 +49,10 @@ class _MineState extends State<Mine> {
     }).toList();
   }
 
-  void _delete(File f, BuildContext context) {
+  void _delete(File f) {
     Config.deleteLocalScore(f)
         .then((_) {
-          if (!context.mounted) return;
+          if (!mounted) return;
           ImageUtils.uiResult({
             'isSuccess': true,
             'title': '删除成功',
@@ -60,7 +60,7 @@ class _MineState extends State<Mine> {
           }, context);
         })
         .catchError((e) {
-          if (!context.mounted) return;
+          if (!mounted) return;
           ImageUtils.uiResult({
             'isSuccess': false,
             'title': '删除失败',
@@ -69,11 +69,11 @@ class _MineState extends State<Mine> {
         });
   }
 
-  void _share(File f, BuildContext context) async {
+  void _share(File f) async {
     final params = ShareParams(text: 'Great picture', files: [XFile(f.path)]);
     final result = await SharePlus.instance.share(params);
     if (result.status == ShareResultStatus.success) {
-      if (context.mounted) {
+      if (mounted) {
         ImageUtils.uiResult({
           'isSuccess': true,
           'title': '分享成功',
@@ -81,7 +81,7 @@ class _MineState extends State<Mine> {
         }, context);
       }
     } else {
-      if (context.mounted) {
+      if (mounted) {
         ImageUtils.uiResult({
           'isSuccess': false,
           'title': '分享失败',
@@ -91,7 +91,7 @@ class _MineState extends State<Mine> {
     }
   }
 
-  void _issue(File f, BuildContext context) async {
+  void _issue(File f) async {
     if (Config.githubToken.isEmpty) {
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -105,7 +105,7 @@ class _MineState extends State<Mine> {
           },
         ),
       );
-      if (!context.mounted) return;
+      if (!mounted) return;
     }
     final token = Config.githubToken;
     if (token.isEmpty) {
@@ -136,7 +136,7 @@ class _MineState extends State<Mine> {
     if (confirmed == false) return;
     final title = p.basenameWithoutExtension(f.path);
     final body = await f.readAsString();
-    if (!context.mounted) return;
+    if (!mounted) return;
     // 显示全屏加载动画
     showDialog(
       context: context,
@@ -145,12 +145,12 @@ class _MineState extends State<Mine> {
     );
     createIssue(token, title, body)
         .then((response) {
-          if (!context.mounted) return;
+          if (!mounted) return;
           if (response.statusCode == 201) {
             ImageUtils.uiResult({
               'isSuccess': true,
-              'title': '发布成功',
-              'message': '《$title》已发布到谱库',
+              'title': '《$title》已发布',
+              'message': '去主页刷新一下吧',
             }, context);
           } else {
             ImageUtils.uiResult({
@@ -161,15 +161,15 @@ class _MineState extends State<Mine> {
           }
         })
         .catchError((e) {
-          if (!context.mounted) return;
+          if (!mounted) return;
           ImageUtils.uiResult({
             'isSuccess': false,
-            'title': '发布失败',
+            'title': '发布失败，疑似网络问题',
             'message': e.toString(),
           }, context);
         })
         .whenComplete(() {
-          if (!context.mounted) return;
+          if (!mounted) return;
           Navigator.of(context, rootNavigator: true).pop();
         });
   }
@@ -470,21 +470,21 @@ class _MineState extends State<Mine> {
         ),
         ValueListenableBuilder<List<int>>(
           valueListenable: filteredScores,
-          builder: (context, indices, _) {
+          builder: (listenerContext, indices, _) {
             if (indices.isEmpty) {
               return SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(
                   child: Image.asset(
                     'assets/noresult.png',
-                    width: MediaQuery.of(context).size.width / 1.8,
+                    width: MediaQuery.of(listenerContext).size.width / 1.8,
                   ),
                 ),
               );
             }
             final files = _allScores;
             return SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
+              delegate: SliverChildBuilderDelegate((sliverListContext, index) {
                 final fileIdx = indices[index];
                 final file = files[fileIdx];
                 final name = p.basenameWithoutExtension(file.path);
@@ -492,8 +492,9 @@ class _MineState extends State<Mine> {
                 final slidableActions = [
                       SlidableAction(
                         padding: EdgeInsets.all(0),
-                        onPressed: (context) {
-                          _issue(file, context);
+                        onPressed: (_) {
+                          // 回调传入的ctx很快就会失效，不能用。要用State的context
+                          _issue(file);
                         },
                         backgroundColor: Colors.greenAccent,
                         foregroundColor: Colors.white,
@@ -502,8 +503,8 @@ class _MineState extends State<Mine> {
                       ),
                       SlidableAction(
                         padding: EdgeInsets.all(0),
-                        onPressed: (context) {
-                          _share(file, context);
+                        onPressed: (_) {
+                          _share(file);
                         },
                         backgroundColor: Colors.blueAccent,
                         foregroundColor: Colors.white,
@@ -512,8 +513,8 @@ class _MineState extends State<Mine> {
                       ),
                       SlidableAction(
                         padding: EdgeInsets.all(0),
-                        onPressed: (context) {
-                          _delete(file, context);
+                        onPressed: (_) {
+                          _delete(file);
                         },
                         backgroundColor: Colors.redAccent,
                         foregroundColor: Colors.white,
