@@ -28,6 +28,7 @@ class Config {
   static const String _networkBannerURLKey = 'networkBannerURL';
   static const String _githubTokenKey = 'githubToken';
   static const String _userInfoKey = 'userInfo';
+  static const String _wakelockKey = 'wakelock';
 
   /// 供 Mine 监听 url要用cached_network_image缓存
   static final ValueNotifier<UserInfo?> userInfoNotifier =
@@ -50,6 +51,7 @@ class Config {
           _networkBannerURLKey,
           _githubTokenKey,
           _userInfoKey,
+          _wakelockKey,
         },
       ),
     ).then((pref_) {
@@ -183,6 +185,15 @@ class Config {
     await file.delete();
     localScores.value.remove(file);
     localScores.notify();
+  }
+
+  /// @brief 屏幕常亮开关
+  static bool get wakelock {
+    return pref.getBool(_wakelockKey) ?? false;
+  }
+
+  static set wakelock(bool value) {
+    pref.setBool(_wakelockKey, value);
   }
 }
 

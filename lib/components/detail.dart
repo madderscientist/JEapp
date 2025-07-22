@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:toastification/toastification.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../mdEditor/builder.dart';
 import '../mdEditor/branch.dart' as branch;
 import '../utils/file.dart';
@@ -38,6 +39,7 @@ class _DetailState extends State<Detail> {
   @override
   void initState() {
     super.initState();
+    if (Config.wakelock) WakelockPlus.enable();
     local = widget.local;
     localTitle = widget.title;
     if (widget.raw == null) {
@@ -60,6 +62,12 @@ class _DetailState extends State<Detail> {
       _lastSaved = widget.raw!;
     }
     ast = fromMarkdown(_lastSaved);
+  }
+
+  @override
+  void dispose() {
+    WakelockPlus.disable();
+    super.dispose();
   }
 
   @override

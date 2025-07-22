@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:toastification/toastification.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../config.dart';
 import '../utils/action.dart';
 import '../utils/file.dart';
@@ -21,6 +22,7 @@ class _SettingsState extends State<Settings> {
   final TextEditingController _bannerController = TextEditingController(
     text: Config.networkBannerURL,
   );
+  final ValueNotifier<bool> wakelockSwitch = ValueNotifier(Config.wakelock);
 
   @override
   void initState() {
@@ -35,6 +37,7 @@ class _SettingsState extends State<Settings> {
   void dispose() {
     localScorePath.dispose();
     _bannerController.dispose();
+    showBannerInput.dispose();
     super.dispose();
   }
 
@@ -166,6 +169,22 @@ class _SettingsState extends State<Settings> {
     );
   }
 
+  Widget _buildWakelockSwitch(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: wakelockSwitch,
+      builder: (context, value, child) {
+        return SwitchListTile(
+          title: const Text('曲谱界面屏幕常亮'),
+          value: value,
+          onChanged: (bool newValue) {
+            wakelockSwitch.value = newValue;
+            Config.wakelock = newValue;
+          },
+        );
+      },
+    );
+  }
+
   static const _divider = Divider(
     height: 1,
     thickness: 1,
@@ -186,6 +205,8 @@ class _SettingsState extends State<Settings> {
             _buildLocalPath(context),
             _divider,
             ..._buildHomeBanner(context),
+            _divider,
+            _buildWakelockSwitch(context),
             _divider,
             _buildLogOut(context),
           ],
