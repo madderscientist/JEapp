@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:toastification/toastification.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 import '../config.dart';
 import '../utils/action.dart';
 import '../utils/file.dart';

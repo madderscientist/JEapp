@@ -464,7 +464,7 @@ class _PanelState extends State<Panel> {
         ValueListenableBuilder<bool>(
           valueListenable: _semiMode,
           builder: (context, sharpMode, child) {
-            return _CheckButton(
+            return CheckButton(
               text: '半音:${sharpMode ? '#' : 'b'}',
               checked: sharpMode,
               disabledStyle: AppTheme.primaryElevatedButtonStyle,
@@ -501,7 +501,7 @@ class _PanelState extends State<Panel> {
         ValueListenableBuilder<bool>(
           valueListenable: _ifLessBrackets,
           builder: (context, value, child) {
-            return _CheckButton(
+            return CheckButton(
               text: '更少括号',
               checked: value,
               onPressed: () => _ifLessBrackets.value = !value,
@@ -528,7 +528,7 @@ class _PanelState extends State<Panel> {
                   ValueListenableBuilder<bool>(
                     valueListenable: _up3,
                     builder: (context, value, child) {
-                      return _CheckButton(
+                      return CheckButton(
                         text: '4→#3',
                         checked: value,
                         onPressed: () {
@@ -542,7 +542,7 @@ class _PanelState extends State<Panel> {
                   ValueListenableBuilder<bool>(
                     valueListenable: _up7,
                     builder: (context, value, child) {
-                      return _CheckButton(
+                      return CheckButton(
                         text: '[1]→#7',
                         checked: value,
                         onPressed: () {
@@ -556,7 +556,7 @@ class _PanelState extends State<Panel> {
                   ValueListenableBuilder<bool>(
                     valueListenable: _autoup,
                     builder: (context, value, child) {
-                      return _CheckButton(
+                      return CheckButton(
                         text: '自动升记号(口琴专用)',
                         checked: value,
                         onPressed: () {
@@ -686,14 +686,15 @@ class _PanelState extends State<Panel> {
   }
 }
 
-class _CheckButton extends StatelessWidget {
+class CheckButton extends StatelessWidget {
   final String text;
   final bool checked;
   final VoidCallback? onPressed;
   final ButtonStyle? disabledStyle;
   final TextStyle? disabledTextStyle;
 
-  const _CheckButton({
+  const CheckButton({
+    super.key, 
     required this.text,
     required this.checked,
     this.onPressed,

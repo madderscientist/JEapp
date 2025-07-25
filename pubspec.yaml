@@ -31,9 +31,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.3
   markdown: ^7.3.0
   html: ^0.15.6
@@ -50,6 +47,9 @@ dependencies:
   share_plus: ^11.0.0
   cached_network_image: ^3.4.1
   wakelock_plus: ^1.3.2
+  just_audio: ^0.10.4
+  audio_service: ^0.18.18
+  flutter_soloud: ^3.2.2
 
 dev_dependencies:
   flutter_test:
@@ -82,6 +82,10 @@ flutter:
     - assets/error.png
     - assets/noresult.png
     - assets/minebg.jpg
+    - assets/metronome/
+    - assets/metronome/1/
+    - assets/metronome/2/
+    - assets/metronome/3/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

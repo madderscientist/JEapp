@@ -355,7 +355,10 @@ class _DetailState extends State<Detail> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
+              onPressed: () {
+                Navigator.of(context).pop(null);
+                canDispose = true;
+              },
               child: const Text('取消'),
             ),
             TextButton(
@@ -449,6 +452,8 @@ class TempTextArea extends StatefulWidget {
   final int? maxLines;
   final InputDecoration? decoration;
   final void Function() onDispose;
+  final TextInputType keyboardType;
+  final bool autofocus;
   const TempTextArea({
     super.key,
     required this.controller,
@@ -456,6 +461,8 @@ class TempTextArea extends StatefulWidget {
     this.expands = true,
     this.maxLines,
     this.decoration,
+    this.keyboardType = TextInputType.multiline,
+    this.autofocus = false,
   });
 
   @override
@@ -478,7 +485,8 @@ class _TempTextAreaState extends State<TempTextArea> {
       maxLines: widget.maxLines,
       expands: widget.expands,
       textAlignVertical: TextAlignVertical.top,
-      keyboardType: TextInputType.multiline,
+      keyboardType: widget.keyboardType,
+      autofocus: widget.autofocus,
     );
   }
 }

@@ -7,6 +7,7 @@ import 'mdstyle.dart';
 import 'builder.dart';
 import 'panel.dart';
 import '../utils/image.dart';
+import 'package:flutter/services.dart';
 
 /// p h1 h2 h3 h4 h5 h6 th td
 class MdInlineWidget extends StatefulWidget {
@@ -70,6 +71,7 @@ class _MdInlineWidgetState extends State<MdInlineWidget> {
     }
     final richtext = GestureDetector(
       onLongPress: () async {
+        HapticFeedback.lightImpact();
         String? text = await _showPanel(context, widget.ast.content);
         if (text != null) {
           _fromMarkdown(text);

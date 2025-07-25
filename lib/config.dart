@@ -4,7 +4,6 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'utils/list_notifier.dart';
 import 'components/github_login.dart' show UserInfo;
-
 export 'utils/list_notifier.dart';
 
 class Config {
