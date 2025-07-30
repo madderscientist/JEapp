@@ -50,6 +50,7 @@ dependencies:
   just_audio: ^0.10.4
   audio_service: ^0.18.18
   flutter_soloud: ^3.2.2
+  dart_melty_soundfont: ^1.1.16
 
 dev_dependencies:
   flutter_test:
@@ -86,6 +87,7 @@ flutter:
     - assets/metronome/1/
     - assets/metronome/2/
     - assets/metronome/3/
+    - assets/PVF.sf2
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
