@@ -73,14 +73,11 @@ class BeatManager {
   // 初始化静音播放器
   Future<void> _initSilencePlayer() async {
     await _silencePlayer.setAudioSource(
-      // SilenceAudioSource 只支持android而且有bug，所以用实际音频
-      AudioSource.asset('assets/metronome/silence_low.mp3'),
+      // SilenceAudioSource 只支持android而且有bug，所以用实际音频+静音
+      AudioSource.asset('assets/metronome/silent.aac'),
     );
     await _silencePlayer.setLoopMode(LoopMode.one);
-    // 第一次play会idle 不得已先play一次
-    // 但第二次进入页面又会卡在play，所以不用
-    // await _silencePlayer.play();
-    // await pause();
+    await _silencePlayer.setVolume(0);  // 手动静音不会被杀，音频为0会被杀
   }
 
   /// beat通知

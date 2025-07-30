@@ -21,6 +21,16 @@
 │  config.dart  【全局变量】
 │  main.dart    【程序入口】
 │  theme.dart   【默认样式】
+│
+├─audioGraph    【弃用。模仿WebAudioAPI的合成器】
+│      audio_context.dart
+│      audio_node.dart
+│      audio_param.dart
+│      connectable.dart
+│      example.dart
+│      note.dart
+│      README.md
+│      value_schedule.dart
 │  
 ├─components
 │      bgimg.dart   【home的头图】
@@ -48,6 +58,12 @@
 │      README.md    【实现说明】
 │      test.dart    【测试本文件夹的模块】
 │      
+├─synthesizer   【音符声音合成器】
+│      README.md            【实现说明】
+│      synth_context.dart   【管理合成与输出】
+│      synth_worker.dart    【在另一个线程开启合成器】
+│      test.dart            【测试本文件夹的模块】
+│
 └─utils
         action.dart 【url_action的封装】
         file.dart   【文件操作】
