@@ -206,16 +206,14 @@ Future<String?> _showPanel(BuildContext context, String init) {
               ),
             ),
             Expanded(
-              child: Padding(
+              child: Panel(
                 padding: padding,
-                child: Panel(
-                  controller: controller,
-                  extremeNotes: extremeNotes,
-                  onDispose: () {
-                    controller.dispose();
-                    extremeNotes.dispose();
-                  },
-                ),
+                controller: controller,
+                extremeNotes: extremeNotes,
+                onDispose: () {
+                  controller.dispose();
+                  extremeNotes.dispose();
+                },
               ),
             ),
           ],

@@ -21,7 +21,8 @@ class _TestPageState extends State<TestPage> {
 
   @override
   void dispose() {
-    IsolateSynthesizer.instance.dispose();
+    // ignore: deprecated_member_use_from_same_package
+    IsolateSynthesizer.dispose();
     super.dispose();
   }
 

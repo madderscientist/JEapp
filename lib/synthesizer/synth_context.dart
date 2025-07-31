@@ -15,11 +15,10 @@ class SynthContext {
   double currentTime = 0; // 当前时间（秒）比用int精准
   final int sampleRate;
 
-  Synthesizer? synthesizer;
-  late Future<void> soundfontLoading;
-
   SynthContext._(this.sampleRate)
     : fillBufferMicroseconds = (1e6 / sampleRate * fillBufferSize).toInt();
+
+  Synthesizer? synthesizer;
 
   /// 初始化合成器 需要外界调用
   /// [bytes] SoundFont 文件数据 只能是 sf2
@@ -37,7 +36,7 @@ class SynthContext {
     synthesizer!.selectPreset(channel: 0, preset: 0);
   }
 
-  static const fillBufferSize = 520; // 要大于512 太小不播放且卡顿
+  static const fillBufferSize = 768; // 要大于512 太小不播放且卡顿
   int get maxBufferSize => fillBufferSize * 3;
   final _samples = Float32List(fillBufferSize);
   final int fillBufferMicroseconds;
@@ -49,6 +48,7 @@ class SynthContext {
       // SoLoud 初始化需要 BackgroundIsolateBinaryMessenger.ensureInitialized
       // 在主Isolate中不需要特意调用，但在Isolate中需要
       // 否则报错：Bad state: The BackgroundIsolateBinaryMessenger.instance value is invalid until BackgroundIsolateBinaryMessenger.ensureInitialized is executed.
+      // 但是非主线程初始化的 SoLoud 不具备 loadAsset 能力(flutter限制) 尽量在主线程初始化
       await SoLoud.instance.init(
         sampleRate: 44100,
         bufferSize: 256,
@@ -100,10 +100,14 @@ class SynthContext {
       waits.add(SoLoud.instance.disposeSource(stream!));
       stream = null;
     }
+    synthesizer?.noteOffAll();
     _check?.cancel();
     _check = null;
+    currentTime = 0;
     await Future.wait(waits);
   }
+
+  // dispose 只需要在stop的基础上 SoLoud.instance.deinit 不写
 
   void feed() {
     if (stream == null || synthesizer == null) return;

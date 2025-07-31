@@ -1,4 +1,6 @@
 class JeScoreOperator {
+  JeScoreOperator._();
+
   // dart format off
   static const List<String> upNotes = ["1","#1","2","#2","3","4","#4","5","#5","6","#6","7"];
   static const List<String> downNotes = ["1","b2","2","b3","3","4","b5","5","b6","6","b7","7"];
@@ -17,66 +19,59 @@ class JeScoreOperator {
     bool autoup = false,
   }) {
     final noteMap = noteAft ?? note;
-    String aft = ''; // 转换后
+    List<String> aft = []; // 转换后 dart用 List&join 比 + 更合适
     int n = 0; // 位置
     int octave = 0; // 八度音高
-    int lastm = 0; // 用于自动升降号，记录上一个音是否升
+    bool lastm = false; // 用于自动升降号，记录上一个音是否升
     while (n < bef.length) {
-      int m = 0; //升降半音
       if (bef[n] == ')' || bef[n] == '[') {
         ++octave;
       } else if (bef[n] == '(' || bef[n] == ']') {
         --octave;
       } else {
-        if (bef[n] == '#') {
-          m = 1;
-        } else if (bef[n] == 'b') {
-          m = -1;
-        }
-        int position = -1;
-        if (n + m.abs() < bef.length) {
-          position = note.indexOf(bef[n + m.abs()]); //在列表中的位置
-        }
-
-        int N = 0; //结果的位置
-        String name = ''; //音名
-        int pitch = 0; //音高
-        String brackets = ''; //括号
+        // 升降半音
+        final int m = switch (bef[n]) {
+          '#' => 1,
+          'b' => -1,
+          _ => 0,
+        };
+        final noteEnd = n + m.abs();
+        // 在列表中的位置
+        int position = noteEnd < bef.length ? note.indexOf(bef[noteEnd]) : -1;
         if (position == -1) {
-          m = 0;
-          aft = aft + bef[n];
+          aft.add(bef[n]);
         } else {
-          N = m + position + x;
-          pitch = octave + (N / 12).floor();
+          int N = m + position + x; // 结果的位置
+          final int pitch = octave + (N / 12).floor();
           N = (N % 12 + 12) % 12; // 取N除12的模，不是余数！
+
+          final String name; //音名
           if (autoup) {
             // 自动升号，针对#3和#7 原理是如果上一个升了，且这个是4或1就变为升记号的形式
-            if (N == 0 && lastm == 1) {
+            if (N == 0 && lastm) {
               name = '(#7)';
-            } else if (N == 5 && lastm == 1) {
+            } else if (N == 5 && lastm) {
               name = '#3';
             } else {
               name = noteMap[N];
             }
-            lastm = name.contains("#") ? 1 : 0;
+            lastm = name.contains("#");
           } else {
             name = noteMap[N];
           }
-          for (int i = 1; i <= pitch.abs(); i++) {
-            brackets = '$brackets[';
+
+          if (pitch >= 0) {
+            aft.add('[' * pitch + name + ']' * pitch);
+          } else {
+            aft.add('(' * (-pitch) + name + ')' * (-pitch));
           }
-          aft =
-              aft +
-              ((pitch > 0) ? brackets : brackets.replaceAll('[', '(')) +
-              name +
-              ((pitch > 0)
-                  ? brackets.replaceAll('[', ']')
-                  : brackets.replaceAll('[', ')'));
+
+          n = noteEnd; // 跳过音符
         }
       }
-      n = n + m.abs() + 1;
+      n++;
     }
-    return aft;
+    return aft.join();
   }
 
   /// content中有几个key
@@ -152,7 +147,7 @@ class JeScoreOperator {
     return (lowest, highest);
   }
 
-  /// 把序号转换为je音符，0-->1
+  /// 把序号转换为je音符，0-->'1'
   static String indexToJe(int index, {List<String>? noteMap}) {
     final noteProvider = noteMap ?? note;
     int position = (index % 12 + 12) % 12;
@@ -167,6 +162,47 @@ class JeScoreOperator {
             ? brackets.replaceAll('[', ']')
             : brackets.replaceAll('[', ')'));
   }
+
+  static List<TextNote> parseText(String txt) {
+    final List<TextNote> parts = [];
+    int n = 0; // 当前位置
+    int octave = 0; // 八度音高
+    while (n < txt.length) {
+      if (txt[n] == ')' || txt[n] == '[') {
+        ++octave;
+        parts.add(TextNote(index: n, text: txt[n], note: null));
+      } else if (txt[n] == '(' || txt[n] == ']') {
+        --octave;
+        parts.add(TextNote(index: n, text: txt[n], note: null));
+      } else {
+        // 升降半音
+        final int m = switch (txt[n]) {
+          '#' => 1,
+          'b' => -1,
+          _ => 0,
+        };
+
+        final noteEnd = n + m.abs();
+        int position = noteEnd < txt.length ? note.indexOf(txt[noteEnd]) : -1;
+        if (position == -1) {
+          // 不是合法音符 挨个字符保存
+          parts.add(TextNote(index: n, text: txt[n], note: null));
+        } else {
+          // 是音符，文本范围为 [n, noteEnd]
+          parts.add(
+            TextNote(
+              index: n,
+              text: txt.substring(n, noteEnd + 1),
+              note: m + position + octave * 12,
+            ),
+          );
+          n = noteEnd;
+        }
+      }
+      n++;
+    }
+    return parts;
+  }
 }
 
 class SimplifiedResult {
@@ -179,4 +215,12 @@ class SimplifiedResult {
     required this.times,
     required this.minSharps,
   });
+}
+
+class TextNote {
+  final int index;
+  final String text; // 文字内容
+  final int? note; // null表示不是音符 '1' -> 0 一个半音为1
+
+  const TextNote({required this.index, required this.text, required this.note});
 }

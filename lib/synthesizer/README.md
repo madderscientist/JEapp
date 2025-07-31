@@ -12,3 +12,10 @@
 决定在Isolate中运行，因为计时器频率挺高，且render挺费算力。isolate间内存隔离，导致Dart封装的SoLoud不是一个；但底层的SoLoud是C++全局单例，多个Isolate共用（因此主线程先init，在其他线程可以发现已经初始化）。创建Dart和C++的通信需要“二进制消息通道（BinaryMessenger）”，因此需要在通道初始化(BackgroundIsolateBinaryMessenger.ensureInitialized)后运行。但Isolate中只会初始化BinaryMessenger，其他的binding都不会，所以rootBundle不能在Isolate中用，也就是isolate中不能读取assets。
 
 因此，soundfont文件数据在主线程加载并发送（为此设计成没有合成器也能播放），Soloud初始化还是放到Isolate中，等待消息通道初始化完成后进行。
+
+## SoLoud 的冲突
+SoLoud是全局单例，共用C++层，因此在任意一个线程init都可以。但是如果不是在主线程，会导致加载asset的“Temporary directory hasn't been initialized”（原因见上），这会导致节拍器的SoLoud加载音源失败，会出现这样的情况：
+- 如果先使用了合成器，再使用节拍器，会导致asset加载失败；
+- 如果先使用了节拍器，再使用合成器，一切正常。
+
+因此即使是在另一个线程的SoLoud，也还是先在主线程init。一旦初始化就不再析构。

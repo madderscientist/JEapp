@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'synthesizer/synth_worker.dart';
 import 'components/home.dart';
 import 'components/mine.dart';
 import 'components/tool.dart';
@@ -51,6 +52,14 @@ class _MainState extends State<Main> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+  }
+
+  @override
+  void dispose() {
+    _homeScrollController.dispose();
+    // ignore: deprecated_member_use_from_same_package
+    IsolateSynthesizer.dispose();
+    super.dispose();
   }
 
   @override

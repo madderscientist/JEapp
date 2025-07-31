@@ -23,9 +23,8 @@ class Tool extends StatelessWidget {
                     appBar: AppBar(title: const Text('转调器')),
                     resizeToAvoidBottomInset: false,
                     body: SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                        child: const Panel(),
+                      child: const Panel(
+                        padding: EdgeInsets.symmetric(horizontal: 6.0),
                       ),
                     ),
                   ),

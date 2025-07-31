@@ -260,7 +260,7 @@ class _MetronomeState extends State<Metronome> {
                     ? CrossFadeState.showFirst
                     : CrossFadeState.showSecond,
                 firstChild: _buildHeadContent(),
-                secondChild: const SizedBox.shrink(),
+                secondChild: const SizedBox(height: 0, width: double.infinity),
                 alignment: Alignment.bottomCenter,
               );
             },
