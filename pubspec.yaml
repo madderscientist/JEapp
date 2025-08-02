@@ -51,6 +51,7 @@ dependencies:
   audio_service: ^0.18.18
   flutter_soloud: ^3.2.2
   dart_melty_soundfont: ^1.1.16
+  record: ^6.0.0
 
 dev_dependencies:
   flutter_test:

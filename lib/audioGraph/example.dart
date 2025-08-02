@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'note.dart';
+import '../utils/freq_table.dart';
 
 void main() {
   runApp(MaterialApp(home: const TestPage()));

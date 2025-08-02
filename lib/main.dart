@@ -1,3 +1,4 @@
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'synthesizer/synth_worker.dart';
@@ -48,6 +49,27 @@ class _MainState extends State<Main> {
     Tool(),
     Mine(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // 请求存储权限
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Permission.storage.request().then((status) {
+        if (!status.isGranted && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('没有存储权限，JE酱无法保存曲谱www'),
+              action: SnackBarAction(
+                label: '去授权',
+                onPressed: openAppSettings,
+              ),
+            ),
+          );
+        }
+      });
+    });
+  }
 
   @override
   void didChangeDependencies() {
