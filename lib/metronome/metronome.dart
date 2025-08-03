@@ -10,7 +10,7 @@ import 'shot_player.dart';
 import 'beat_level.dart';
 import 'beat_manager.dart';
 import '../mdEditor/panel.dart' show CheckButton;
-import '../components/detail.dart' show TempTextArea;
+import '../components/temp_textarea.dart' show TempTextArea;
 
 class Metronome extends StatefulWidget {
   const Metronome({super.key});

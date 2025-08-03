@@ -4,7 +4,6 @@ import 'package:audio_service/audio_service.dart';
 typedef Fv = Future<void> Function();
 typedef FvD = Future<void> Function(Duration);
 
-/// 管理节拍和音效播放
 class BackGroundServiceHandler extends BaseAudioHandler {
   final List<Fv> playbackQueue = [];
   final List<Fv> pauseQueue = [];

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../mdEditor/panel.dart';
 import '../metronome/metronome.dart';
+import '../timefrequency/tuner.dart';
 
 class Tool extends StatelessWidget {
   const Tool({super.key});
@@ -35,7 +36,21 @@ class Tool extends StatelessWidget {
             },
             child: const Text('转调器'),
           ),
-          ElevatedButton(onPressed: () {}, child: const Text('调音器')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Scaffold(
+                    body: SafeArea(top: true, bottom: false, child: Tuner()),
+                  ),
+                ),
+              ).then((_) {
+                if (context.mounted) FocusScope.of(context).unfocus();
+              });
+            },
+            child: const Text('调音器'),
+          ),
           ElevatedButton(
             onPressed: () {
               Navigator.push(

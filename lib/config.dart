@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:je/utils/file.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -193,6 +194,18 @@ class Config {
 
   static set wakelock(bool value) {
     pref.setBool(_wakelockKey, value);
+  }
+
+  /// @brief 初始化SoLoud
+  /// @return 是否已经初始化
+  static Future<bool> initSoLoud() async {
+    if (SoLoud.instance.isInitialized) return true;
+    await SoLoud.instance.init(
+      sampleRate: 44100,
+      bufferSize: 256,
+      channels: Channels.mono,
+    );
+    return false;
   }
 }
 

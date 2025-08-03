@@ -6,7 +6,11 @@ class LatestArray {
   int _head = 0;  // 数据插入处
   int _tail = 0;
 
-  LatestArray(int capacity) : _buffer = Float32List(capacity + 1);
+  LatestArray(int capacity) : _buffer = Float32List(capacity + 1) {
+    for (int i = 0; i < _buffer.length; i++) {
+      _buffer[i] = -1;
+    }
+  }
 
   int get length => _buffer.length;
 

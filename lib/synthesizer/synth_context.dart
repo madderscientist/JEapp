@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:dart_melty_soundfont/dart_melty_soundfont.dart';
+import '../config.dart';
 
 /// 控制合成于输出 可以在任意线程使用
 class SynthContext {
@@ -44,17 +45,11 @@ class SynthContext {
   SoundHandle? handle;
   Timer? _check;
   Future<void> initSoLoudStream() async {
-    if (SoLoud.instance.isInitialized == false) {
-      // SoLoud 初始化需要 BackgroundIsolateBinaryMessenger.ensureInitialized
-      // 在主Isolate中不需要特意调用，但在Isolate中需要
-      // 否则报错：Bad state: The BackgroundIsolateBinaryMessenger.instance value is invalid until BackgroundIsolateBinaryMessenger.ensureInitialized is executed.
-      // 但是非主线程初始化的 SoLoud 不具备 loadAsset 能力(flutter限制) 尽量在主线程初始化
-      await SoLoud.instance.init(
-        sampleRate: 44100,
-        bufferSize: 256,
-        channels: Channels.mono,
-      );
-    }
+    // SoLoud 初始化需要 BackgroundIsolateBinaryMessenger.ensureInitialized
+    // 在主Isolate中不需要特意调用，但在Isolate中需要
+    // 否则报错：Bad state: The BackgroundIsolateBinaryMessenger.instance value is invalid until BackgroundIsolateBinaryMessenger.ensureInitialized is executed.
+    // 但是非主线程初始化的 SoLoud 不具备 loadAsset 能力(flutter限制) 尽量在主线程初始化
+    await Config.initSoLoud();
     stop();
     stream = SoLoud.instance.setBufferStream(
       bufferingType: BufferingType.released,

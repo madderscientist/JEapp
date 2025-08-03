@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
+import 'package:je/config.dart';
 
 // 播放音效 要求及时响应
 class ShotPlayer {
@@ -63,15 +64,8 @@ class ShotPlayer {
   }
 
   Future<void> _initSoloud() async {
-    alreadyInit = soloud.isInitialized;
     // 本类析构后要回到之前的样子。如果之前没有初始化，说明生命周期自己掌握，需要deinit
-    if (alreadyInit == false) {
-      await soloud.init(
-        sampleRate: 44100,
-        bufferSize: 256,
-        channels: Channels.mono,
-      );
-    }
+    alreadyInit = await Config.initSoLoud();
     await Future.wait([
       _loadBasicSource(),
       _loadBeatGroup(beatGroupNotifier.value),
