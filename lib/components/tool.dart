@@ -16,56 +16,57 @@ class Tool extends StatelessWidget {
         mainAxisSpacing: 6.0,
         children: [
           ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => Scaffold(
-                    appBar: AppBar(title: const Text('转调器')),
-                    resizeToAvoidBottomInset: false,
-                    body: SafeArea(
-                      child: const Panel(
-                        padding: EdgeInsets.symmetric(horizontal: 6.0),
-                      ),
-                    ),
-                  ),
-                ),
-              ).then((_) {
-                if (context.mounted) FocusScope.of(context).unfocus();
-              });
-            },
-            child: const Text('转调器'),
+            onPressed: () => Tool.openPanel(context),
+            child: const Text('转调/播放器'),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => Scaffold(
-                    body: SafeArea(top: true, bottom: false, child: Tuner()),
-                  ),
-                ),
-              ).then((_) {
-                if (context.mounted) FocusScope.of(context).unfocus();
-              });
-            },
+            onPressed: () => Tool.openTuner(context),
             child: const Text('调音器'),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => Material(child: Metronome()),
-                ),
-              ).then((_) {
-                if (context.mounted) FocusScope.of(context).unfocus();
-              });
-            },
+            onPressed: () => Tool.openMetronome(context),
             child: const Text('节拍器'),
           ),
         ],
       ),
     );
+  }
+
+  static Future<void> openPanel(BuildContext context) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(title: const Text('转调/播放器')),
+          resizeToAvoidBottomInset: false,
+          body: SafeArea(
+            child: const Panel(padding: EdgeInsets.symmetric(horizontal: 6.0)),
+          ),
+        ),
+      ),
+    ).then((_) {
+      if (context.mounted) FocusScope.of(context).unfocus();
+    });
+  }
+
+  static Future<void> openTuner(BuildContext context) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            Scaffold(body: SafeArea(top: true, bottom: false, child: Tuner())),
+      ),
+    ).then((_) {
+      if (context.mounted) FocusScope.of(context).unfocus();
+    });
+  }
+
+  static Future<void> openMetronome(BuildContext context) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => Material(child: Metronome())),
+    ).then((_) {
+      if (context.mounted) FocusScope.of(context).unfocus();
+    });
   }
 }

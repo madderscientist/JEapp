@@ -1,6 +1,7 @@
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:quick_actions/quick_actions.dart';
 import 'synthesizer/synth_worker.dart';
 import 'components/home.dart';
 import 'components/mine.dart';
@@ -53,6 +54,25 @@ class _MainState extends State<Main> {
   @override
   void initState() {
     super.initState();
+    final QuickActions quickActions = const QuickActions();
+    quickActions.initialize((String shortcutType) {
+      switch (shortcutType) {
+        case 'tool-panel':
+          Tool.openPanel(context);
+          break;
+        case 'tool-tuner':
+          Tool.openTuner(context);
+          break;
+        case 'tool-metronome':
+          Tool.openMetronome(context);
+          break;
+      }
+    });
+    quickActions.setShortcutItems([
+      const ShortcutItem(type: 'tool-panel', localizedTitle: '转调/播放器'),
+      const ShortcutItem(type: 'tool-tuner', localizedTitle: '调音器'),
+      const ShortcutItem(type: 'tool-metronome', localizedTitle: '节拍器'),
+    ]);
     // 请求存储权限
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Permission.storage.request().then((status) {
@@ -60,10 +80,7 @@ class _MainState extends State<Main> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('没有存储权限，JE酱无法保存曲谱www'),
-              action: SnackBarAction(
-                label: '去授权',
-                onPressed: openAppSettings,
-              ),
+              action: SnackBarAction(label: '去授权', onPressed: openAppSettings),
             ),
           );
         }
