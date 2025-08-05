@@ -203,7 +203,7 @@ class _TimeFrequencyState extends State<TimeFrequency>
     recorder.cancel().whenComplete(() => recorder.dispose());
     pitches.dispose();
     _tempController?.dispose();
-    if (widget.normedCenterNotifier != null) {
+    if (widget.normedCenterNotifier == null) {
       viewCenterNormNotifier.dispose();
     }
     super.dispose();
@@ -472,9 +472,10 @@ Stream<List<T>> _bufferedListStream<T>(
       buffer.removeRange(0, hop);
     }
   }
-  if (buffer.isNotEmpty) {
-    yield List<T>.from(buffer);
-  }
+  // 最后的不要了，因为数目不够一帧，且应该发生在dispose后
+  // if (buffer.isNotEmpty) {
+  //   yield List<T>.from(buffer);
+  // }
 }
 
 /// Converts PCM16 encondig to float.

@@ -64,10 +64,10 @@ class _TunerState extends State<Tuner> {
   void dispose() {
     WakelockPlus.disable();
     freqNotifier.dispose();
-    pitchNotifier.dispose();
-    normedCenterNotifier.dispose();
-    sensitivityNotifier.dispose();
     autoTrackNotifier.dispose();
+    normedCenterNotifier.dispose();
+    pitchNotifier.dispose();
+    sensitivityNotifier.dispose();
     panelExpanded.dispose();
     ring.dispose();
     isRinging.dispose();
@@ -526,9 +526,8 @@ class _TunerState extends State<Tuner> {
               padding: const EdgeInsets.symmetric(horizontal: 2.0),
               child: GestureDetector(
                 onTap: () {
-                  setState(() {
-                    normedCenterNotifier.value = note.$2.toDouble();
-                  });
+                  normedCenterNotifier.value = note.$2.toDouble();
+                  setState(() {}); // 通知timefrequency重绘
                 },
                 child: CircleAvatar(
                   backgroundColor: Colors.white,

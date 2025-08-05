@@ -8,26 +8,33 @@ class Tool extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(6.0),
-      child: GridView.count(
-        crossAxisCount: 2,
-        crossAxisSpacing: 6.0,
-        mainAxisSpacing: 6.0,
-        children: [
-          ElevatedButton(
-            onPressed: () => Tool.openPanel(context),
-            child: const Text('转调/播放器'),
-          ),
-          ElevatedButton(
-            onPressed: () => Tool.openTuner(context),
-            child: const Text('调音器'),
-          ),
-          ElevatedButton(
-            onPressed: () => Tool.openMetronome(context),
-            child: const Text('节拍器'),
-          ),
-        ],
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsetsGeometry.only(
+          top: MediaQuery.of(context).padding.top,
+          bottom: MediaQuery.of(context).padding.bottom,
+          left: 4,
+          right: 4,
+        ),
+        child: Column(
+          spacing: 10,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () => Tool.openMetronome(context),
+              child: Image.asset('assets/tools/metronome.png'),
+            ),
+            GestureDetector(
+              onTap: () => Tool.openTuner(context),
+              child: Image.asset('assets/tools/tuner.png'),
+            ),
+            GestureDetector(
+              onTap: () => Tool.openPanel(context),
+              child: Image.asset('assets/tools/player.png'),
+            ),
+          ],
+        ),
       ),
     );
   }
