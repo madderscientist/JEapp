@@ -3,8 +3,7 @@ name: build_apk
 # action事件触发
 on:
     push:
-        # push tag时触发
-        tag:
+        tags:
             - v*
 
 # 可以有多个jobs
