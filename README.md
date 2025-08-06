@@ -17,7 +17,7 @@
     <img src="https://i1.hdslb.com/bfs/new_dyn/8575bdd7e7ed03544caa1336c8308108290251303.jpg" alt="我的" style="width: 150px; height: auto;">
 </div>
 
-## [👉下载👈](https://github.com/madderscientist/timbreAMT/releases/)
+## [👉下载👈](https://github.com/madderscientist/JEapp/releases)
 
 仅提供Android安装包，大部分手机选择x86_64即可。
 
