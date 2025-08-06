@@ -29,6 +29,7 @@ class Config {
   static const String _githubTokenKey = 'githubToken';
   static const String _userInfoKey = 'userInfo';
   static const String _wakelockKey = 'wakelock';
+  static const String _timbreKey = 'timbre';
 
   /// 供 Mine 监听 url要用cached_network_image缓存
   static final ValueNotifier<UserInfo?> userInfoNotifier =
@@ -52,6 +53,7 @@ class Config {
           _githubTokenKey,
           _userInfoKey,
           _wakelockKey,
+          _timbreKey,
         },
       ),
     ).then((pref_) {
@@ -194,6 +196,15 @@ class Config {
 
   static set wakelock(bool value) {
     pref.setBool(_wakelockKey, value);
+  }
+
+  static List<String> timbres = ['钢琴', '小提琴', '长笛'];
+  static int get defaultTimbre {
+    return (pref.getInt(_timbreKey) ?? 0) % timbres.length;
+  }
+
+  static set defaultTimbre(int value) {
+    pref.setInt(_timbreKey, value % timbres.length); // 三种音色
   }
 
   /// @brief 初始化SoLoud

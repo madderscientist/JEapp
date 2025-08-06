@@ -220,7 +220,18 @@ class _PanelState extends State<Panel> {
             keyboardType: TextInputType.text,
           ),
         ),
-        Text('替换为', style: textStyle),
+        IconButton(
+          onPressed: () {
+            _mainController.text = _mainController.text.replaceAll(
+              _replaceControllerFrom.text,
+              _replaceControllerTo.text,
+            );
+            _updateExtreme();
+          },
+          visualDensity: VisualDensity.compact,
+          tooltip: '替换',
+          icon: const Icon(color: AppTheme.color, Icons.arrow_forward),
+        ),
         Expanded(
           child: TextField(
             style: textStyle,
@@ -233,13 +244,14 @@ class _PanelState extends State<Panel> {
         ),
         ElevatedButton(
           onPressed: () {
-            _mainController.text = _mainController.text.replaceAll(
-              _replaceControllerFrom.text,
-              _replaceControllerTo.text,
-            );
+            _mainController.text = _mainController.text
+                .replaceAll('【', '[')
+                .replaceAll('】', ']')
+                .replaceAll('（', '(')
+                .replaceAll('）', ')');
             _updateExtreme();
           },
-          child: const Text('替换'),
+          child: const Text('英文括号'),
         ),
       ],
     );
@@ -764,7 +776,8 @@ class _PanelState extends State<Panel> {
                   '◉ E调→C调 ⇔ 1→3\n'
                   '◉ 1=#C是口琴的记谱方式，这里用降记号代替还原号\n'
                   '◉ “自动升记号”会根据上一个音符决定用4/#3、1/#7\n'
-                  '◎ 编辑文字时仅支持markdown行内元素语法',
+                  '◉ “英文括号”可以将“【（）】” (常见于评论区) 变为je谱的英文括号\n'
+                  '◎ 编辑文字时仅支持markdown行内元素语法（长按呼出）',
               contentPadding: contentPadding,
             ),
             maxLines: null, // 允许多行输入
@@ -1012,12 +1025,16 @@ class _PanelState extends State<Panel> {
           case List<Preset>():
             // 收到预设列表后表明初始化完成
             if (!initCompleter.isCompleted) {
+              IsolateSynthesizer.instance.send(
+                ChangePreset(channel: 0, preset: Config.defaultTimbre),
+              );
               initCompleter.complete();
             }
             break;
         }
       };
       if (IsolateSynthesizer.instance.presets != null) {
+        // 初始化后更改音色的逻辑在settings中
         initCompleter.complete(); // 已经初始化过了
       } else {
         await initCompleter.future;
@@ -1086,6 +1103,7 @@ class _PanelState extends State<Panel> {
                 value: bpm.clamp(bpmMin, bpmMax).toDouble(),
                 min: bpmMin,
                 max: bpmMax,
+                activeColor: AppTheme.color,
                 onChanged: (value) {
                   _bpm.value = value.round();
                 },
@@ -1113,6 +1131,7 @@ class _PanelState extends State<Panel> {
                     value: playAt.clamp(0, max).toDouble(),
                     min: 0,
                     max: max.toDouble(),
+                    activeColor: AppTheme.color,
                     onChanged: (value) {
                       _playAt.value = value.round();
                     },

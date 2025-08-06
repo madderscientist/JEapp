@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:toastification/toastification.dart';
 import '../config.dart';
+import '../synthesizer/synth_worker.dart';
 import '../utils/action.dart';
 import '../utils/file.dart';
 import '../theme.dart';
+import '../utils/update.dart';
 
 class Settings extends StatefulWidget {
   const Settings({super.key});
@@ -22,6 +24,7 @@ class _SettingsState extends State<Settings> {
     text: Config.networkBannerURL,
   );
   final ValueNotifier<bool> wakelockSwitch = ValueNotifier(Config.wakelock);
+  final ValueNotifier<int> selectedTimbre = ValueNotifier(Config.defaultTimbre);
 
   @override
   void initState() {
@@ -35,13 +38,20 @@ class _SettingsState extends State<Settings> {
   @override
   void dispose() {
     localScorePath.dispose();
-    _bannerController.dispose();
     showBannerInput.dispose();
+    _bannerController.dispose();
+    wakelockSwitch.dispose();
+    selectedTimbre.dispose();
     super.dispose();
   }
 
   Widget _buildVersion() {
-    return ListTile(title: const Text('检查更新'), onTap: () {});
+    return ListTile(
+      title: const Text('检查更新'),
+      onTap: () {
+        appUpdateCheck(context);
+      },
+    );
   }
 
   Widget _buildLocalPath(BuildContext context) {
@@ -153,10 +163,8 @@ class _SettingsState extends State<Settings> {
         toastification.show(
           context: context,
           type: ToastificationType.info,
-          style: ToastificationStyle.fillColored,
+          style: ToastificationStyle.flatColored,
           title: const Text('已退出登录'),
-          backgroundColor: Colors.black54,
-          foregroundColor: Colors.white,
           alignment: Alignment.bottomCenter,
           autoCloseDuration: const Duration(seconds: 2),
           borderRadius: BorderRadius.circular(12.0),
@@ -184,6 +192,42 @@ class _SettingsState extends State<Settings> {
     );
   }
 
+  Widget _buildTimbreSelection(BuildContext context) {
+    return ListTile(
+      title: const Text('播放音色'),
+      trailing: ValueListenableBuilder<int>(
+        valueListenable: selectedTimbre,
+        builder: (context, value, child) {
+          return DropdownButton<int>(
+            value: value,
+            items: List.generate(
+              Config.timbres.length,
+              (index) => DropdownMenuItem(
+                value: index,
+                child: Text(Config.timbres[index]),
+              ),
+            ),
+            onChanged: (int? newValue) {
+              if (newValue != null) {
+                selectedTimbre.value = newValue;
+                Config.defaultTimbre = newValue;
+                if (IsolateSynthesizer.created) {
+                  IsolateSynthesizer.instance.send(
+                    ChangePreset(
+                      channel: 0,
+                      preset: Config.defaultTimbre,
+                    ),
+                  );
+                }
+              }
+            },
+            underline: SizedBox(), // 去掉下划线更像Tile
+          );
+        },
+      ),
+    );
+  }
+
   static const _divider = Divider(
     height: 1,
     thickness: 1,
@@ -206,6 +250,8 @@ class _SettingsState extends State<Settings> {
             ..._buildHomeBanner(context),
             _divider,
             _buildWakelockSwitch(context),
+            _divider,
+            _buildTimbreSelection(context),
             _divider,
             _buildLogOut(context),
           ],

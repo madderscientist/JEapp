@@ -1,10 +1,35 @@
-<p align="center"><img src="assets/icon.png" alt="JEapp Icon" /></p>
+<p align="center">
+    <img src="assets/icon.png" alt="JEapp Icon" style="border-radius:64px;overflow:hidden;object-fit:cover;box-shadow:0 2px 8px #888;" />
+</p>
 
 # JE曲谱库·移动端
 
 基于 [github曲谱库](https://github.com/zytx121/je/issues) 和 [Acgmuse论坛](https://www.acgmuse.com) 两个数字谱曲谱库 的 曲谱库客户端，纯前端无后端。
 
+<div style="overflow-x: auto; white-space: nowrap;">
+    <img src="https://i1.hdslb.com/bfs/new_dyn/efb64e99d56e726be906aa149e10ff31290251303.jpg" alt="首页" style="width: 150px; height: auto;">
+    <img src="https://i1.hdslb.com/bfs/new_dyn/4275c5fa7145033d5636b7fece665029290251303.jpg" alt="曲谱详情" style="width: 150px; height: auto;">
+    <img src="https://i1.hdslb.com/bfs/new_dyn/43b12c5862dca285d0d55bb1310787fe290251303.jpg" alt="转调器" style="width: 150px; height: auto;">
+    <img src="https://i1.hdslb.com/bfs/new_dyn/5def5d4be3a8691a0d38f8ef7a1f0709290251303.jpg" alt="播放器" style="width: 150px; height: auto;">
+    <img src="https://i1.hdslb.com/bfs/new_dyn/97b41b6993f6464272bec0235eba71cc290251303.jpg" alt="工具" style="width: 150px; height: auto;">
+    <img src="https://i1.hdslb.com/bfs/new_dyn/46b50959c297702e526c1b91916b33a8290251303.jpg" alt="节拍器" style="width: 150px; height: auto;">
+    <img src="https://i1.hdslb.com/bfs/new_dyn/9164b9d14c8d4a8b6f1f22cca2e8bda3290251303.jpg" alt="调音器" style="width: 150px; height: auto;">
+    <img src="https://i1.hdslb.com/bfs/new_dyn/8575bdd7e7ed03544caa1336c8308108290251303.jpg" alt="我的" style="width: 150px; height: auto;">
+</div>
+
+## [👉下载👈](https://github.com/madderscientist/timbreAMT/releases/)
+
+仅提供Android安装包，大部分手机选择x86_64即可。
+
 使用 `Flutter` 开发以支持Android和IOS，但由于没有果系设备，仅保证Android端可用。没做平板的适配，仅适用于竖屏小屏幕。
+
+> 由于更新检测使用`tag_name`，因此release的tag必须以'v'开头或者不要前缀，且每次都要和项目配置保持一致！
+
+## 基本功能
+- 两个谱库的查询，github谱库最新谱推送
+- 长按曲谱可以进入转调/播放页面
+- 简洁独特的调音器/节拍器
+- 支持上传曲谱
 
 ## 谱库应用开发历史
 - 2018年: 爱上ACG演奏→发现je吧→发现[github曲谱库](https://github.com/zytx121/je/issues)，他们有一个安卓程序“哔谱哔谱”，但是废弃了许多功能。萌生了取而代之的想法。
@@ -89,4 +114,9 @@
         je_score.dart   【翻译自https://github.com/madderscientist/je_score_operator】
         list_notifier.dart  【暴露notifyListeners方法的ValueNotifier】
         score_request.dart  【曲谱网络请求的封装】
+        update.dart 【检查更新】
 ```
+
+<p align="center">
+    <img src="assets/splash/brand.png" alt="JEapp Icon" style="width:300px;height:auto;" />
+</p>

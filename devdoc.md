@@ -57,7 +57,13 @@ https://book.flutterchina.club/chapter15/globals.html#_15-4-1-%E5%85%A8%E5%B1%80
 这部分很繁琐，专门开了个文件介绍：[lib/mdEditor/README.md](lib/mdEditor/README.md)
 
 ## 小米底部手势栏透明
-在 `android/app/src/main/res/values/styles.xml` 加入 `<item name="android:windowTranslucentNavigation">true</item>`
+在 `android/app/src/main/res/values/styles.xml` 加入 `<item name="android:windowTranslucentNavigation">true</item>`。在使用了 splash screen 插件后，需要给生成的每一个style文件进行配置。
 
 ## github 登录
 由于要向第三方仓库发送issue，只能用Oauth App而不是Github App。由于没有后端，而且不能将Client secret写在代码中（会泄露），所以只能使用`Enable Device Flow`。
+
+## 播放相关
+见 [节拍器](/lib/metronome/README.md) 和 [合成器](/lib/synthesizer/README.md) 的碎碎念。
+
+## 签名与发布
+参考了 https://guozhigq.github.io/post/25ae93b9.html
