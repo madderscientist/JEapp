@@ -24,7 +24,7 @@ jobs:
                   java-version: "17"
 
             - name: 检查缓存
-              uses: actions/cache@v2
+              uses: actions/cache@v4
               id: cache-flutter
               with:
                   path: /root/flutter-sdk # Flutter SDK 的路径
