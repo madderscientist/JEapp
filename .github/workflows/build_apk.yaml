@@ -12,6 +12,8 @@ jobs:
     build_apk:
         # 运行环境 ubuntu-latest window-latest mac-latest
         runs-on: ubuntu-latest
+        permissions:
+          contents: write
 
         steps:
             - name: 代码迁出
