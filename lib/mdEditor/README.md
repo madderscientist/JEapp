@@ -101,3 +101,6 @@ htmlAST:
 
 ## 编辑区格式
 段内换行本应由 `LineBrak` 承担，但其markdown语法比较丑陋(`\+换行`)，所以编辑区将`LineBrak`语法用更符合认知的`\n`替代，为此加入了`content`属性，对于`LineBrak`，返回的就是`\n`，区分于markdown返回的`\\\n`；但markdown的换行语法`\\\n`限制太大，比如不能用于标题的换行，所以生成的源码一律改为用`<br>`。段内解析时一切换行都要保证解析为`<br>`，具体做法是将`\n`替换为`<br>`再解析，为此增加了`dart:markdown::inline`的`<br>`的解析器。
+
+## 关于系统缩放
+[RichText不跟随系统字体缩放](https://github.com/flutter/flutter/issues/61452)，必须显式传递Scaler才会。而我没传。

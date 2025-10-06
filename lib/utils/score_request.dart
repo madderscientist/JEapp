@@ -43,6 +43,9 @@ class IssueRequester {
     isLoading = false;
 
     if (response.statusCode != 200) {
+      if (response.statusCode == 403) {
+        throw Exception("请求超额度了 ╥﹏╥");
+      }
       throw Exception("网络请求失败了 ╥﹏╥");
     }
 
@@ -80,6 +83,9 @@ class ScoreSearcher {
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode != 200) {
+      if (response.statusCode == 403) {
+        throw Exception("请求超额度了 ╥﹏╥");
+      }
       throw Exception("网络请求失败了 ╥﹏╥");
     }
 
