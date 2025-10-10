@@ -22,6 +22,7 @@ class Home extends StatefulWidget {
   @override
   State<Home> createState() => _HomeState();
 }
+
 // 有关Widget和变量的依赖关系，见home_val.drawio
 class _HomeState extends State<Home> with TickerProviderStateMixin {
   final focusNode = FocusNode(); // 跨屏幕键盘
@@ -64,7 +65,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     if (scrollController.position.pixels >
             scrollController.position.maxScrollExtent - 100 &&
         _issueRequester.isLoading == false) {
-      _fetchScores(context);
+      _fetchScores(context).then((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _onScroll(); // 若高度还是不够，继续请求 但要等到build完成
+        });
+      });
     }
   }
 
@@ -90,12 +95,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           _bgImageNotifier.value = img;
         })
         .catchError((_) {
-          debugPrint('Failed to load remote image: $url');
+          debugPrint('@Failed to load remote image: $url');
         }); // 网络失败不处理，保持之前的图片
   }
 
   final _issueRequestClient = http.Client();
-  late final IssueRequester _issueRequester = IssueRequester(perPage: 20, client: _issueRequestClient);
+  late final IssueRequester _issueRequester = IssueRequester(
+    perPage: 20,
+    client: _issueRequestClient,
+  );
   final LazyNotifier<List<RawScore>> _scores = LazyNotifier([]);
   Future<void> _fetchScores(BuildContext context, {bool reset = false}) async {
     try {
@@ -108,7 +116,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       if (!context.mounted) return;
       toastification.show(
         context: context,
-        type: (e is StateError) ? ToastificationType.info : ToastificationType.error,
+        type: (e is StateError)
+            ? ToastificationType.info
+            : ToastificationType.error,
         style: ToastificationStyle.flatColored,
         title: Text(e.toString().split(':').last),
         alignment: Alignment.topCenter,
@@ -157,7 +167,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setBG();
-      _fetchScores(context, reset: true);
+      _onScroll(); // 初始高度不足自动加载，而不是调用fetch
     });
     focusNode.addListener(() {
       if (_allowFocus == false) FocusManager.instance.primaryFocus?.unfocus();
@@ -285,7 +295,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       }
                       return SizedBox(
                         height:
-                            kBottomNavigationBarHeight + Config.navBarTopPadding,
+                            kBottomNavigationBarHeight +
+                            Config.navBarTopPadding,
                         child: Text(
                           '没有更多啦 ╮(๑•́ ₃•̀๑)╭',
                           textAlign: TextAlign.center,
