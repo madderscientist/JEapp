@@ -78,7 +78,7 @@ class _DetailState extends State<Detail> {
         bottom: true,
         top: false,
         child: PopScope(
-          canPop: true,
+          canPop: false,
           onPopInvokedWithResult: (didPop, result) async {
             FocusManager.instance.primaryFocus?.unfocus();
             if (didPop) return; // 已经pop，无需拦截
@@ -317,7 +317,7 @@ class _DetailState extends State<Detail> {
         ? _emptyError
         : (nameRepeat ? _repeatError : _ok);
     // 为true时可用
-    final labelNotifier = ValueNotifier<String>(getLabelText());
+    final labelNotifier = LazyNotifier<String>(getLabelText());
     controller.addListener(() {
       final text = controller.text.trim();
       nameRepeat = Config.checkRepeatName(text);

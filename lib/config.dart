@@ -1,11 +1,10 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:je/utils/file.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'utils/list_notifier.dart';
+import 'utils/lazy_notifier.dart';
 import 'components/github_login.dart' show UserInfo;
-export 'utils/list_notifier.dart';
+export 'utils/lazy_notifier.dart';
 
 class Config {
   Config._();
@@ -32,11 +31,10 @@ class Config {
   static const String _timbreKey = 'timbre';
 
   /// 供 Mine 监听 url要用cached_network_image缓存
-  static final ValueNotifier<UserInfo?> userInfoNotifier =
-      ValueNotifier<UserInfo?>(null);
+  static final LazyNotifier<UserInfo?> userInfoNotifier = LazyNotifier(null);
 
   /// 供 Search 监听
-  static final ListNotifier<String> history = ListNotifier([]);
+  static final LazyNotifier<List<String>> history = LazyNotifier([]);
 
   static Future<void> init() {
     return Future.wait([initLocalScores(), initPreferences()]);
@@ -167,7 +165,7 @@ class Config {
   static const String searchBarHeroTag = 'searchBarHero';
 
   static const localScorePath = 'scores';
-  static final ListNotifier<File> localScores = ListNotifier([]);
+  static final LazyNotifier<List<File>> localScores = LazyNotifier([]);
 
   /// 有重复的名称则返回true
   static bool checkRepeatName(String filename) {
@@ -198,7 +196,7 @@ class Config {
     pref.setBool(_wakelockKey, value);
   }
 
-  static List<String> timbres = ['钢琴', '小提琴', '长笛'];
+  static const List<String> timbres = ['钢琴', '小提琴', '长笛'];
   static int get defaultTimbre {
     return (pref.getInt(_timbreKey) ?? 0) % timbres.length;
   }

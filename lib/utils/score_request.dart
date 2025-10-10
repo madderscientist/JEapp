@@ -7,36 +7,67 @@ import '../components/detail.dart';
 
 /// 请求github的newest issues接口
 class IssueRequester {
+  // 1000为谱库曲谱数量规模 用以保证有下一页 如果无法预估则用0
+  static const int resultScale = 1000;
   static const String baseUrl =
       "https://api.github.com/repos/zytx121/je/issues";
-  final http.Client _client;
+  final http.Client? client;  // 外部传入，外部管理
   String _nextUrl = "";
   int perPage;
-  int issueNumber = 0; // 记录总共请求了多少个issues
+  int issueNumber = -1; // 记录总共请求了多少个issues -1表示没开始 用以兼容resultScale=0的情况
   bool isLoading = false;
 
-  IssueRequester({this.perPage = 10}) : _client = http.Client();
+  IssueRequester({this.perPage = 10, this.client});
 
   int get pageNext => (issueNumber ~/ perPage) + 1;
-  bool get hasNext => _nextUrl.isNotEmpty || issueNumber < 1000;
+  bool get hasNext => _nextUrl.isNotEmpty || issueNumber < resultScale;
+
+  /// 用原始页数请求（已请求数小于resultScale时的保底）
+  String makeUrl() {
+    String url = baseUrl;
+    if (url.endsWith('?') || url.endsWith('&')) {
+      return "${url}per_page=$perPage&page=$pageNext";
+    }
+    final separator = url.contains('?') ? '&' : '?';
+    return "$url${separator}per_page=$perPage&page=$pageNext";
+  }
+
+  /// 从响应头中解析出下一页的链接
+  /// 如果没有下一页，返回null
+  /// https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api?apiVersion=2022-11-28#about-the-response-code-and-headers
+  static String? nextPageUrl(http.Response response) {
+    final linkHeader = response.headers['link'];
+    if (linkHeader != null) {
+      final links = linkHeader.split(',');
+      for (var link in links) {
+        if (link.contains('rel="next"')) {
+          int start = link.indexOf('<') + 1;
+          return link.substring(start, link.indexOf('>', start));
+        }
+      }
+    }
+    return null;
+  }
 
   Future<List<RawScore>> fetchIssues({bool reset = false}) async {
     if (isLoading) throw StateError("在找了在找了 (/ﾟДﾟ)/");
-
     if (reset) {
-      issueNumber = 0;
+      issueNumber = -1;
       _nextUrl = "";
     }
     if (!hasNext) throw StateError("没有更多啦 ╮(๑•́ ₃•̀๑)╭");
-
+    if (issueNumber < 0) issueNumber = 0;
     isLoading = true;
-    final String url = _nextUrl.isEmpty
-        ? "$baseUrl?per_page=$perPage&page=$pageNext"
-        : _nextUrl;
+    final String url = _nextUrl.isEmpty ? makeUrl() : _nextUrl;
     final http.Response response;
     try {
-      response = await _client.get(Uri.parse(url));
+      if (client == null) {
+        response = await http.get(Uri.parse(url));
+      } else {
+        response = await client!.get(Uri.parse(url));
+      }
     } catch (e) {
+      if (issueNumber == 0) issueNumber = -1;
       isLoading = false;
       throw Exception("网络请求失败了 ╥﹏╥");
     }
@@ -49,52 +80,38 @@ class IssueRequester {
       throw Exception("网络请求失败了 ╥﹏╥");
     }
 
-    final List<dynamic> issueList = jsonDecode(utf8.decode(response.bodyBytes));
-
     // 获取下一页的链接，因为page大了会请求失败
-    // https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api?apiVersion=2022-11-28#about-the-response-code-and-headers
-    final linkHeader = response.headers['link'];
-    _nextUrl = "";
-    if (linkHeader != null) {
-      final links = linkHeader.split(',');
-      for (var link in links) {
-        if (link.contains('rel="next"')) {
-          int start = link.indexOf('<') + 1;
-          _nextUrl = link.substring(start, link.indexOf('>', start));
-          break;
-        }
-      }
-    }
+    _nextUrl = IssueRequester.nextPageUrl(response) ?? "";
 
+    final List<dynamic> issueList = jsonDecode(utf8.decode(response.bodyBytes));
     final result = RawScore.parseGithub(issueList);
     issueNumber += result.length;
     return result;
-  }
-
-  void dispose() {
-    _client.close();
   }
 }
 
 class ScoreSearcher {
   static Future<List<RawScore>> github(String keyword) async {
-    final url =
+    String? url =
         'https://api.github.com/search/issues?q=$keyword+state:open+repo:zytx121/je';
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode != 200) {
-      if (response.statusCode == 403) {
-        throw Exception("请求超额度了 ╥﹏╥");
+    List<RawScore> result = [];
+    while (url != null) {
+      // 如有分页，一次性请求完
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode != 200) {
+        if (response.statusCode == 403) {
+          throw Exception("请求超额度了 ╥﹏╥");
+        }
+        throw Exception("网络请求失败了 ╥﹏╥");
       }
-      throw Exception("网络请求失败了 ╥﹏╥");
+      final Map<String, dynamic> data = jsonDecode(
+        utf8.decode(response.bodyBytes),
+      );
+      final scores = data['items'] as List<dynamic>;
+      result.addAll(RawScore.parseGithub(scores));
+      url = IssueRequester.nextPageUrl(response);
     }
-
-    final Map<String, dynamic> data = jsonDecode(
-      utf8.decode(response.bodyBytes),
-    );
-
-    final scores = data['items'] as List<dynamic>;
-    return RawScore.parseGithub(scores);
+    return result;
   }
 
   static Future<List<RawScore>> acgmuse(String keyword) async {

@@ -3,7 +3,7 @@ import 'package:je/utils/freq_table.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../mdEditor/panel.dart' show CheckButton;
 import '../components/temp_textarea.dart' show TempTextArea;
-import '../utils/list_notifier.dart';
+import '../utils/lazy_notifier.dart';
 import '../theme.dart';
 import 'ring.dart';
 import 'time_frequency.dart';
@@ -15,22 +15,22 @@ class Tuner extends StatefulWidget {
 }
 
 class _TunerState extends State<Tuner> {
-  final ValueNotifier<double> freqNotifier = ValueNotifier(-1);
+  final LazyNotifier<double> freqNotifier = LazyNotifier(-1);
   // 因为要被多个notifier影响 需要暴露notifier方法
   final LazyNotifier<double> pitchNotifier = LazyNotifier(-1);
   // 归一化视野中心 被TimeFrequency使用与设置 在!autoTrack时被本类使用
-  final ValueNotifier<double> normedCenterNotifier = ValueNotifier(0);
+  final LazyNotifier<double> normedCenterNotifier = LazyNotifier(0);
   int _lastNormedCenter = 0; // 用于跟踪上次的归一化中心
 
-  final ValueNotifier<double> sensitivityNotifier = ValueNotifier(0.2); // 灵敏度调节
-  final ValueNotifier<bool> autoTrackNotifier = ValueNotifier(true); // 自动跟踪开关
+  final LazyNotifier<double> sensitivityNotifier = LazyNotifier(0.2); // 灵敏度调节
+  final LazyNotifier<bool> autoTrackNotifier = LazyNotifier(true); // 自动跟踪开关
 
   final FreqTable freqTable = FreqTable();
 
   // 是否展开panel
-  ValueNotifier<bool> panelExpanded = ValueNotifier<bool>(false);
+  LazyNotifier<bool> panelExpanded = LazyNotifier<bool>(false);
 
-  ValueNotifier<bool?> isRinging = ValueNotifier<bool?>(false);
+  LazyNotifier<bool?> isRinging = LazyNotifier<bool?>(false);
   late final Ring ring = Ring(isRinging);
 
   @override
@@ -410,7 +410,7 @@ class _TunerState extends State<Tuner> {
       return '';
     }
 
-    final labelNotifier = ValueNotifier<String>(getLabelText());
+    final labelNotifier = LazyNotifier<String>(getLabelText());
     controller.addListener(() {
       labelNotifier.value = getLabelText();
     });
@@ -472,15 +472,15 @@ class _TunerState extends State<Tuner> {
 
   static const presetNotes = {
     '吉他': [
-      ('E4', 40),
-      ('B3', 35),
-      ('G3', 31),
-      ('D3', 26),
-      ('A2', 21),
       ('E2', 16),
+      ('A2', 21),
+      ('D3', 26),
+      ('G3', 31),
+      ('B3', 35),
+      ('E4', 40),
     ],
-    '小提琴': [('E5', 52), ('A4', 45), ('D4', 38), ('G3', 31)],
-    '尤克里里': [('A4', 45), ('E4', 40), ('C4', 36), ('G4', 43)],
+    '小提琴': [('G3', 31), ('D4', 38), ('A4', 45), ('E5', 52)],
+    '尤克里里': [('G4', 43), ('C4', 36), ('E4', 40), ('A4', 45)],
   };
 
   Widget _buildQuickNotes() {

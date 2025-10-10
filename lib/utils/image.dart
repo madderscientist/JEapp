@@ -9,6 +9,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:toastification/toastification.dart';
 
+import 'lazy_notifier.dart';
+
 enum ImageType { local, network, base64 }
 
 /// 图片处理工具类
@@ -169,7 +171,7 @@ class FullScreenImageViewer extends StatefulWidget {
   final String herotag;
 
   /// 优先使用传递而来的imageProviderNotifier，其次使用imageProvider，最后使用src加载
-  final ValueNotifier<ImageProvider>? imageProviderNotifier;
+  final LazyNotifier<ImageProvider>? imageProviderNotifier;
   final ImageProvider? imageProvider; // 传递provider可以加速
   final void Function(String)? onChange; // 修改图片的回调
   const FullScreenImageViewer({
@@ -187,7 +189,7 @@ class FullScreenImageViewer extends StatefulWidget {
 
 class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
   // 一切以imageProviderNotifier为准，而不是widget.src，因为前者可以更改
-  late final ValueNotifier<ImageProvider> _imageProviderNotifier;
+  late final LazyNotifier<ImageProvider> _imageProviderNotifier;
 
   @override
   void initState() {
@@ -195,7 +197,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
     if (widget.imageProviderNotifier != null) {
       _imageProviderNotifier = widget.imageProviderNotifier!;
     } else {
-      _imageProviderNotifier = ValueNotifier<ImageProvider>(
+      _imageProviderNotifier = LazyNotifier<ImageProvider>(
         widget.imageProvider ?? ImageUtils.getImageProvider(widget.src),
       );
     }

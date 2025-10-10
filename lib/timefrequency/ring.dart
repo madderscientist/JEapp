@@ -1,9 +1,8 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import '../config.dart';
 
 class Ring {
-  ValueNotifier<bool?> isRinging;
+  LazyNotifier<bool?> isRinging;
   Ring(this.isRinging);
   bool? alreadyInit;
   AudioSource? toneSource;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'synth_worker.dart';
 
@@ -16,9 +17,37 @@ class _TestPageState extends State<TestPage> {
   @override
   void initState() {
     super.initState();
-    IsolateSynthesizer.instance;
+    init();
   }
+  final initCompleter = Completer<void>(); // 指示合成器是否初始化完成
 
+  void init() async {
+    if (!initCompleter.isCompleted) {
+      IsolateSynthesizer.instance.onReceive = (dynamic msg) {
+        switch (msg) {
+          case List<Preset>():
+            // 收到预设列表后表明初始化完成
+            if (!initCompleter.isCompleted) {
+              IsolateSynthesizer.instance.send(
+                ChangePreset(channel: 0, preset: 0),
+              );
+              initCompleter.complete();
+            }
+            break;
+          case _:
+            debugPrint('@msg: ${msg.runtimeType}');
+        }
+      };
+      if (IsolateSynthesizer.instance.presets != null) {
+        // 初始化后更改音色的逻辑在settings中
+        initCompleter.complete(); // 已经初始化过了
+      } else {
+        await initCompleter.future;
+      }
+    }
+    IsolateSynthesizer.instance.send(StartAudio());
+    debugPrint('@test started');
+  }
   @override
   void dispose() {
     // ignore: deprecated_member_use_from_same_package

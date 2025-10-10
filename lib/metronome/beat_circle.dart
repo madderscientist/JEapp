@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import '../utils/lazy_notifier.dart';
 
 // 水波纹数据结构
 class _Ripple {
@@ -18,7 +19,7 @@ class BeatCircle extends StatefulWidget {
   final Stream<void> beatStream;
 
   /// 父元素控制 是否启用节拍圈
-  final ValueNotifier<bool> enable;
+  final LazyNotifier<bool> enable;
 
   /// 在画布上滑动时触发的回调，参数为变化量
   final BeatChangeCallback? onBeatChange;
@@ -93,7 +94,9 @@ class _BeatCircleState extends State<BeatCircle>
     ]).animate(_controller);
     // 启动水波纹ticker (兼drop松手动效)
     _rippleTicker = Ticker((_) {
-      if (mounted && (_ripples.isNotEmpty || dropDistance != null)) setState(() {});
+      if (mounted && (_ripples.isNotEmpty || dropDistance != null)) {
+        setState(() {});
+      }
     });
     _rippleTicker.start();
     // 监听节拍事件

@@ -15,7 +15,7 @@ class Panel extends StatefulWidget {
   final TextEditingController? controller;
 
   /// 外部用于获取最音数据的 如果传递了则本组件不再渲染
-  final ValueNotifier<(String, String)>? extremeNotes;
+  final LazyNotifier<(String, String)>? extremeNotes;
 
   /// dispose发生在complete之后，所以必须在回调中controller.dispose
   final void Function()? onDispose;
@@ -56,39 +56,39 @@ class _PanelState extends State<Panel> {
 
   final List<String> _noteAft = [...JeScoreOperator.upNotes];
 
-  late final ValueNotifier<(String, String)> _extremeNotes;
+  late final LazyNotifier<(String, String)> _extremeNotes;
 
   // 转调方式
-  final ValueNotifier<int> _pitchSelect = ValueNotifier(-1);
-  final ValueNotifier<int> _pitchUpDown = ValueNotifier(1);
+  final LazyNotifier<int> _pitchSelect = LazyNotifier(-1);
+  final LazyNotifier<int> _pitchUpDown = LazyNotifier(1);
 
-  final ValueNotifier<int> _tonalityFrom = ValueNotifier(0);
-  final ValueNotifier<int> _tonalityTo = ValueNotifier(0);
+  final LazyNotifier<int> _tonalityFrom = LazyNotifier(0);
+  final LazyNotifier<int> _tonalityTo = LazyNotifier(0);
 
-  final ValueNotifier<bool> _extremeMode = ValueNotifier(false); // 0-最低 1-最高
+  final LazyNotifier<bool> _extremeMode = LazyNotifier(false); // 0-最低 1-最高
 
   // 转调模式
-  final ValueNotifier<bool> _ifLessBrackets = ValueNotifier(true);
-  final ValueNotifier<bool> _semiMode = ValueNotifier(true);
-  final ValueNotifier<bool> _up3 = ValueNotifier(false);
-  final ValueNotifier<bool> _up7 = ValueNotifier(false);
-  final ValueNotifier<bool> _autoup = ValueNotifier(false);
+  final LazyNotifier<bool> _ifLessBrackets = LazyNotifier(true);
+  final LazyNotifier<bool> _semiMode = LazyNotifier(true);
+  final LazyNotifier<bool> _up3 = LazyNotifier(false);
+  final LazyNotifier<bool> _up7 = LazyNotifier(false);
+  final LazyNotifier<bool> _autoup = LazyNotifier(false);
 
   static bool _expandPanelHistory = true; // 在disopose时存档
-  final ValueNotifier<bool> _expandPanel = ValueNotifier(_expandPanelHistory);
+  final LazyNotifier<bool> _expandPanel = LazyNotifier(_expandPanelHistory);
 
   bool get autoup => _autoup.value && _semiMode.value;
 
   // 播放相关
   final _renderKey = GlobalKey(); // 用于取 RenderParagraph
-  final _parsedNotes = ValueNotifier<List<TextNote>>([]); // 解析后的音符列表
+  final _parsedNotes = LazyNotifier<List<TextNote>>([]); // 解析后的音符列表
   static int _bpmHistory = 300; // 在disopose时存档
-  final _bpm = ValueNotifier<int>(_bpmHistory); // 速度
-  final ValueNotifier<int> _playAt = ValueNotifier(-1); // 列表项
-  final ValueNotifier<bool?> _playing = ValueNotifier(false); // null表示等待响应
+  final _bpm = LazyNotifier<int>(_bpmHistory); // 速度
+  final LazyNotifier<int> _playAt = LazyNotifier(-1); // 列表项
+  final LazyNotifier<bool?> _playing = LazyNotifier(false); // null表示等待响应
 
   // 快捷输入
-  final ValueNotifier<bool> _ifShowInputBar = ValueNotifier(false);
+  final LazyNotifier<bool> _ifShowInputBar = LazyNotifier(false);
   bool _kbdExpansion = false;
 
   @override
@@ -117,7 +117,7 @@ class _PanelState extends State<Panel> {
       }
     });
     // value notifier
-    _extremeNotes = widget.extremeNotes ?? ValueNotifier(('?', '?'));
+    _extremeNotes = widget.extremeNotes ?? LazyNotifier(('?', '?'));
     // 初始化时计算一次 如果是外部传入extremeNotes的且外部监听(editable_mdwidget.dart:_showPanel)，必须延迟一下
     WidgetsBinding.instance.addPostFrameCallback((_) => _updateExtreme());
   }
@@ -208,7 +208,7 @@ class _PanelState extends State<Panel> {
   /////// 以下是转调器界面 ///////
   Widget _buildReplace(BuildContext context) {
     return Row(
-      spacing: 6,
+      spacing: 5,
       children: [
         Expanded(
           child: TextField(
@@ -259,15 +259,15 @@ class _PanelState extends State<Panel> {
 
   Widget _buildNum(BuildContext context) {
     return Row(
-      spacing: 6,
+      spacing: 5,
       children: [
-        Expanded(
+        IntrinsicWidth(
           child: ValueListenableBuilder<int>(
             valueListenable: _pitchSelect,
             builder: (context, value, child) {
               return DropdownButtonFormField<int>(
                 style: textStyle,
-                value: value,
+                initialValue: value,
                 items: const [
                   DropdownMenuItem(value: -1, child: Text('所有音')),
                   DropdownMenuItem(value: 0, child: Text('所有do')),
@@ -293,7 +293,7 @@ class _PanelState extends State<Panel> {
             builder: (context, value, child) {
               return DropdownButtonFormField<int>(
                 style: textStyle,
-                value: value,
+                initialValue: value,
                 items: const [
                   DropdownMenuItem(value: 1, child: Text('升')),
                   DropdownMenuItem(value: -1, child: Text('降')),
@@ -386,7 +386,7 @@ class _PanelState extends State<Panel> {
                   labelText: '转换前',
                   labelStyle: textStyle,
                 ),
-                value: value,
+                initialValue: value,
                 items: tonality,
                 onChanged: (newValue) {
                   if (newValue != null) {
@@ -408,7 +408,7 @@ class _PanelState extends State<Panel> {
                   labelText: '转换后',
                   labelStyle: textStyle,
                 ),
-                value: value,
+                initialValue: value,
                 items: tonality,
                 onChanged: (newValue) {
                   if (newValue != null) {
@@ -447,7 +447,7 @@ class _PanelState extends State<Panel> {
             builder: (context, value, child) {
               return DropdownButtonFormField<bool>(
                 style: textStyle,
-                value: value,
+                initialValue: value,
                 items: const [
                   DropdownMenuItem(value: false, child: Text('最低音')),
                   DropdownMenuItem(value: true, child: Text('最高音')),
@@ -1242,11 +1242,7 @@ class CheckButton extends StatelessWidget {
       child: ElevatedButton(
         key: ValueKey(checked),
         onPressed: onPressed,
-        style: style.copyWith(
-          padding: WidgetStateProperty.all(
-            EdgeInsets.symmetric(horizontal: 10),
-          ),
-        ),
+        style: style,
         child: Text(text, style: checked ? null : disabledTextStyle),
       ),
     );

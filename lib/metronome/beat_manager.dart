@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import '../utils/background_service_handler.dart';
-import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import '../utils/lazy_notifier.dart';
 
 class BeatManager {
   final BackGroundServiceHandler handler;
@@ -48,7 +48,7 @@ class BeatManager {
   }
 
   /// bpm管理 外界应该用bpm的getter和setter
-  final ValueNotifier<int> bpmNotifier = ValueNotifier<int>(120);
+  final LazyNotifier<int> bpmNotifier = LazyNotifier<int>(120);
   Duration bpmInterval = fromBPM(120);
   int get bpm => bpmNotifier.value;
   set bpm(int newBPM) => bpmNotifier.value = newBPM.clamp(bpmMin, bpmMax);
@@ -59,7 +59,7 @@ class BeatManager {
 
   /// 节拍产生开关 外界应该用enable的getter和setter
   /// enableNotifier在play和pause中修改，其他地方不允许修改
-  final ValueNotifier<bool> enableNotifier = ValueNotifier<bool>(false);
+  final LazyNotifier<bool> enableNotifier = LazyNotifier<bool>(false);
   bool get enable => enableNotifier.value;
   set enable(bool value) => value ? play() : pause();
 
@@ -77,7 +77,7 @@ class BeatManager {
       AudioSource.asset('assets/metronome/silent.aac'),
     );
     await _silencePlayer.setLoopMode(LoopMode.one);
-    await _silencePlayer.setVolume(0);  // 手动静音不会被杀，音频为0会被杀
+    await _silencePlayer.setVolume(0); // 手动静音不会被杀，音频为0会被杀
   }
 
   /// beat通知

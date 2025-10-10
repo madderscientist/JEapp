@@ -39,13 +39,14 @@ class Main extends StatefulWidget {
 
 class _MainState extends State<Main> {
   int _currentIndex = 0;
-  bool _mainShowTop = false; // home是否在顶部
+  // bool _mainShowTop = false; // home是否在顶部
+  final LazyNotifier<bool> _mainShowTop = LazyNotifier(false);
   final ScrollController _homeScrollController = ScrollController();
 
   late final List<Widget> _pages = [
     Home(
       scrollController: _homeScrollController,
-      ifToTop: (i) => setState(() => _mainShowTop = i),
+      show2top: _mainShowTop,
     ),
     Tool(),
     Mine(),
@@ -96,6 +97,7 @@ class _MainState extends State<Main> {
   @override
   void dispose() {
     _homeScrollController.dispose();
+    _mainShowTop.dispose();
     // ignore: deprecated_member_use_from_same_package
     IsolateSynthesizer.dispose();
     super.dispose();
@@ -154,7 +156,7 @@ class _MainState extends State<Main> {
         currentIndex: _currentIndex,
         onTap: (int index) {
           setState(() {
-            if (_currentIndex == 0 && index == 0 && _mainShowTop) {
+            if (_currentIndex == 0 && index == 0 && _mainShowTop.value) {
               _homeScrollController.animateTo(
                 0.0,
                 duration: const Duration(
@@ -169,129 +171,37 @@ class _MainState extends State<Main> {
         },
         items: [
           BottomNavigationBarItem(
+            label: '找谱',
             icon: Padding(
               padding: EdgeInsets.only(top: Config.navBarTopPadding),
-              child: Icon(
-                _mainShowTop && _currentIndex == 0
-                    ? Icons.arrow_upward
-                    : Icons.home,
+              child: ValueListenableBuilder<bool>(
+                valueListenable: _mainShowTop,
+                builder: (context, show2Top, child) {
+                  return Icon(
+                    show2Top && _currentIndex == 0
+                        ? Icons.arrow_upward
+                        : Icons.home,
+                  );
+                },
               ),
             ),
-            label: '找谱',
           ),
           const BottomNavigationBarItem(
+            label: '工具',
             icon: Padding(
               padding: EdgeInsets.only(top: Config.navBarTopPadding),
               child: Icon(Icons.handyman),
             ),
-            label: '工具',
           ),
           const BottomNavigationBarItem(
+            label: '我的',
             icon: Padding(
               padding: EdgeInsets.only(top: Config.navBarTopPadding),
               child: Icon(Icons.person),
             ),
-            label: '我的',
           ),
         ],
       ),
     );
   }
 }
-
-// Widget _buildBottomNavigationBar() {
-//   return Container(
-//     decoration: BoxDecoration(
-//       color: Colors.transparent,
-//       // 阴影
-//       boxShadow: [
-//         BoxShadow(
-//           color: Colors.black.withAlpha(24),
-//           offset: const Offset(0, -3), // 向上投影
-//           blurRadius: 16,
-//           spreadRadius: 2,
-//         ),
-//       ],
-//     ),
-//     child: ClipRRect(
-//       // 上圆角
-//       borderRadius: const BorderRadius.only(
-//         topLeft: Radius.circular(20),
-//         topRight: Radius.circular(20),
-//       ),
-//       child: Stack(
-//         children: [
-//           // 毛玻璃层
-//           BackdropFilter(
-//             filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-//             child: Container(
-//               color: Theme.of(
-//                 context,
-//               ).colorScheme.primaryContainer.withAlpha(96),
-//               height: kBottomNavigationBarHeight + Config.navBarTopPadding,
-//             ),
-//           ),
-//           BottomNavigationBar(
-//             type: BottomNavigationBarType.fixed,
-//             backgroundColor: Colors.transparent,
-//             elevation: 0, // 关闭自带阴影
-//             selectedItemColor: Colors.purpleAccent,
-//             unselectedItemColor: Colors.grey[500],
-//             currentIndex: _currentIndex,
-//             onTap: (int index) {
-//               setState(() {
-//                 if (_currentIndex == 0 && index == 0 && _mainShowTop) {
-//                   _homeScrollController.animateTo(
-//                     0.0,
-//                     duration: const Duration(
-//                       milliseconds: Config.home2searchDuration,
-//                     ),
-//                     curve: Curves.easeInOut,
-//                   );
-//                 }
-//                 _currentIndex = index;
-//               });
-//             },
-//             items: [
-//               BottomNavigationBarItem(
-//                 icon: Padding(
-//                   padding: EdgeInsets.only(top: Config.navBarTopPadding),
-//                   child: Icon(
-//                     _mainShowTop && _currentIndex == 0
-//                         ? Icons.arrow_upward
-//                         : Icons.home,
-//                   ),
-//                 ),
-//                 label: '找谱',
-//               ),
-//               const BottomNavigationBarItem(
-//                 icon: Padding(
-//                   padding: EdgeInsets.only(top: Config.navBarTopPadding),
-//                   child: Icon(Icons.handyman),
-//                 ),
-//                 label: '工具',
-//               ),
-//               const BottomNavigationBarItem(
-//                 icon: Padding(
-//                   padding: EdgeInsets.only(top: Config.navBarTopPadding),
-//                   child: Icon(Icons.person),
-//                 ),
-//                 label: '我的',
-//               ),
-//             ],
-//           ),
-//           // 顶部内部高光突起
-//           Positioned(
-//             top: 0,
-//             left: 0,
-//             right: 0,
-//             child: Container(
-//               height: 2,
-//               color: const Color(0x66FFFFFF), // 纯色横线，覆盖圆角
-//             ),
-//           ),
-//         ],
-//       ),
-//     ),
-//   );
-// }

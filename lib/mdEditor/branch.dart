@@ -20,21 +20,31 @@ class Common extends MdTree implements MdBlock {
   static Widget commonBuild(
     BuildContext context,
     List<MdNode> children, [
-    bool autoText = false,
+    bool autoText = false,      // 对于单独的inline节点，是否使用Paragraph包裹
+    bool autoFixInline = false, // 是否自动wrap inline（更改原children!）
   ]) {
     final List<MdBlock> tree = [];
-    // 对于单独的inline节点，使用Paragraph包裹
+    bool findInline = false;
     for (final child in children) {
       if (child is MdInline) {
         if (!autoText) {
           continue;
         }
+        findInline = true;
+        // 多个inline的情况举例：ListItem中“a`b`c”有三个inline
         if (tree.isEmpty || tree.last is! Paragraph) {
           tree.add(Paragraph());
         }
         (tree.last as Paragraph).addChild(child);
       } else {
         tree.add(child as MdBlock);
+      }
+    }
+    // 自动修复
+    if (autoFixInline && findInline) {
+      children.clear();
+      for (final block in tree) {
+        children.add(block as MdNode);
       }
     }
     if (tree.isEmpty) {
@@ -148,7 +158,11 @@ class ListItem extends Common {
 
   @override
   Widget build(BuildContext context) {
-    return Common.commonBuild(context, children, true);
+    // 以下函数有副作用，因为要“可编辑”必须每个元素都不是inline，此函数会自动转换
+    // 其实这里的处理不是很好，最好能保留children原始结构
+    // 可能可以在commonBuild中建立proxy代理此节点，但比较麻烦
+    // 可以将现在的做法理解为：要编辑就留不住原结构
+    return Common.commonBuild(context, children, true, true);
   }
 }
 

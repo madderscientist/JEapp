@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import '../utils/lazy_notifier.dart';
 import 'branch.dart';
 import 'leaf.dart' as leaf;
 import 'mdstyle.dart';
@@ -160,7 +161,7 @@ class _MdCodeState extends State<MdCode> {
 
 Future<String?> _showPanel(BuildContext context, String init) {
   final controller = TextEditingController(text: init);
-  final ValueNotifier<(String, String)> extremeNotes = ValueNotifier(('', ''));
+  final LazyNotifier<(String, String)> extremeNotes = LazyNotifier(('', ''));
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
@@ -232,13 +233,13 @@ class MdImageWidget extends StatefulWidget {
 }
 
 class _MdImageWidgetState extends State<MdImageWidget> {
-  late final ValueNotifier<ImageProvider> imageProviderNotifier;
+  late final LazyNotifier<ImageProvider> imageProviderNotifier;
   late final String herotag;
 
   @override
   void initState() {
     super.initState();
-    imageProviderNotifier = ValueNotifier<ImageProvider>(
+    imageProviderNotifier = LazyNotifier<ImageProvider>(
       ImageUtils.getImageProvider(widget.ast.src),
     );
     herotag = UniqueKey().toString();

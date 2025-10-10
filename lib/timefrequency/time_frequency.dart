@@ -9,16 +9,16 @@ import 'yin.dart';
 import 'nopeak.dart';
 import 'latest_array.dart';
 import '../theme.dart';
-import '../utils/list_notifier.dart';
+import '../utils/lazy_notifier.dart';
 import '../utils/freq_table.dart';
 
 class TimeFrequency extends StatefulWidget {
   final FreqTable freqTable;
-  final ValueNotifier<bool> autoTrackNotifier;
-  final ValueNotifier<double>? freqNotifier; // 实时频率
-  final ValueNotifier<double>? pitchNotifier; // 稳定后的音高
-  final ValueNotifier<double>? normedCenterNotifier;  // 中心音符
-  final ValueNotifier<double>? sensitivityNotifier;
+  final LazyNotifier<bool> autoTrackNotifier;
+  final LazyNotifier<double>? freqNotifier; // 实时频率
+  final NotifierValueListenable<double>? pitchNotifier; // 稳定后的音高
+  final LazyNotifier<double>? normedCenterNotifier; // 中心音符
+  final LazyNotifier<double>? sensitivityNotifier;
   const TimeFrequency({
     super.key,
     required this.freqTable,
@@ -60,9 +60,9 @@ class _TimeFrequencyState extends State<TimeFrequency>
       _isDragging ||
       DateTime.now().difference(_lastDragEnd).inMilliseconds < 800;
 
-  late ValueNotifier<double> viewCenterNormNotifier; // 归一化视野中心
+  late LazyNotifier<double> viewCenterNormNotifier; // 归一化视野中心
   double get viewCenterNorm => viewCenterNormNotifier.value;
-  // 这个setter会联动viewLeft 如果不联动（比如从viewLeft得到）请使用 viewCenterNormNotifier.value = 
+  // 这个setter会联动viewLeft 如果不联动（比如从viewLeft得到）请使用 viewCenterNormNotifier.value =
   set viewCenterNorm(double value) {
     viewCenterNormNotifier.value = value.clamp(0, widget.freqTable.length - 1);
     _updateViewLeft();
@@ -122,7 +122,7 @@ class _TimeFrequencyState extends State<TimeFrequency>
     super.initState();
     pitches = LazyNotifier(LatestArray(120));
     viewCenterNormNotifier =
-        widget.normedCenterNotifier ?? ValueNotifier<double>(0);
+        widget.normedCenterNotifier ?? LazyNotifier<double>(0);
     viewCenterNorm = _canvasWidth / 2 / _semiToneWidth;
     widget.autoTrackNotifier.addListener(() {
       if (widget.autoTrackNotifier.value) {
@@ -263,7 +263,7 @@ class _TimeFrequencyState extends State<TimeFrequency>
               // 自动移动视野 以稳定频率为中心 如果最后一个频率超出则以其为准
               if (_userHolding == false) {
                 double p = latestArray.latest;
-                if (p < 0)  p = viewCenterNorm;
+                if (p < 0) p = viewCenterNorm;
                 final pAt = pitch2Px(p);
                 if (widget.autoTrackNotifier.value && _tempController == null) {
                   final centerPx = stablePitch > 0
@@ -278,7 +278,8 @@ class _TimeFrequencyState extends State<TimeFrequency>
                   viewLeft = viewLeft.clamp(-w2, _canvasWidth - w2);
                   if (viewLeft != _viewLeft) {
                     _viewLeft = viewLeft;
-                    viewCenterNormNotifier.value = (viewLeft + w2) / _semiToneWidth;
+                    viewCenterNormNotifier.value =
+                        (viewLeft + w2) / _semiToneWidth;
                     stablePitch = viewCenterNorm;
                   }
                 } else if (!widget.autoTrackNotifier.value) {

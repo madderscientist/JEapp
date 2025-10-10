@@ -25,12 +25,15 @@ class AppTheme {
         ),
       );
 
+  static const contentPadding = EdgeInsets.symmetric(vertical: 7, horizontal: 10);
+
   /// 深色背景的按钮
   static final primaryElevatedButtonStyle = ElevatedButton.styleFrom(
     backgroundColor: color, // 按钮背景色
     foregroundColor: Colors.white, // 文字颜色
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     elevation: 1,
+    padding: AppTheme.contentPadding,
   );
 
   /// 浅色背景的按钮
@@ -39,6 +42,7 @@ class AppTheme {
     foregroundColor: color,
     side: primaryOutlineInputBorder.borderSide,
     elevation: 0,
+    padding: AppTheme.contentPadding,
   );
 
   static final disabledElevatedButtonStyle = ElevatedButton.styleFrom(
@@ -46,6 +50,7 @@ class AppTheme {
     foregroundColor: Colors.white,
     side: BorderSide(color: Colors.grey, width: 1.2),
     elevation: 0,
+    padding: AppTheme.contentPadding,
   );
 
   /// 输入类的样式：边框
@@ -62,7 +67,7 @@ class AppTheme {
     enabledBorder: primaryOutlineInputBorder,
     focusedBorder: primaryOutlineInputBorder,
     isDense: true,
-    contentPadding: EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+    contentPadding: AppTheme.contentPadding,
   );
 
   /// 重要的输入框（搜索框）样式

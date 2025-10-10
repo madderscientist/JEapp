@@ -22,12 +22,12 @@ class Mine extends StatefulWidget {
 class _MineState extends State<Mine> {
   final TextEditingController _controller = TextEditingController();
   List<File> get _allScores => Config.localScores.value;
-  late final ValueNotifier<List<int>> filteredScores;
+  late final LazyNotifier<List<int>> filteredScores;
 
   @override
   void initState() {
     super.initState();
-    filteredScores = ValueNotifier(List.generate(_allScores.length, (i) => i));
+    filteredScores = LazyNotifier(List.generate(_allScores.length, (i) => i));
     _controller.addListener(_filter);
     Config.localScores.addListener(_filter);
   }
@@ -490,38 +490,38 @@ class _MineState extends State<Mine> {
                 final name = p.basenameWithoutExtension(file.path);
                 final date = file.statSync().modified;
                 final slidableActions = [
-                      SlidableAction(
-                        padding: EdgeInsets.all(0),
-                        onPressed: (_) {
-                          // 回调传入的ctx很快就会失效，不能用。要用State的context
-                          _issue(file);
-                        },
-                        backgroundColor: Colors.greenAccent,
-                        foregroundColor: Colors.white,
-                        icon: Icons.upload,
-                        label: '上传',
-                      ),
-                      SlidableAction(
-                        padding: EdgeInsets.all(0),
-                        onPressed: (_) {
-                          _share(file);
-                        },
-                        backgroundColor: Colors.blueAccent,
-                        foregroundColor: Colors.white,
-                        icon: Icons.share,
-                        label: '分享',
-                      ),
-                      SlidableAction(
-                        padding: EdgeInsets.all(0),
-                        onPressed: (_) {
-                          _delete(file);
-                        },
-                        backgroundColor: Colors.redAccent,
-                        foregroundColor: Colors.white,
-                        icon: Icons.delete,
-                        label: '删除',
-                      ),
-                    ];
+                  SlidableAction(
+                    padding: EdgeInsets.all(0),
+                    onPressed: (_) {
+                      // 回调传入的ctx很快就会失效，不能用。要用State的context
+                      _issue(file);
+                    },
+                    backgroundColor: Colors.greenAccent,
+                    foregroundColor: Colors.white,
+                    icon: Icons.upload,
+                    label: '上传',
+                  ),
+                  SlidableAction(
+                    padding: EdgeInsets.all(0),
+                    onPressed: (_) {
+                      _share(file);
+                    },
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
+                    icon: Icons.share,
+                    label: '分享',
+                  ),
+                  SlidableAction(
+                    padding: EdgeInsets.all(0),
+                    onPressed: (_) {
+                      _delete(file);
+                    },
+                    backgroundColor: Colors.redAccent,
+                    foregroundColor: Colors.white,
+                    icon: Icons.delete,
+                    label: '删除',
+                  ),
+                ];
                 final inner = Slidable(
                   key: ValueKey(file.path),
                   endActionPane: ActionPane(

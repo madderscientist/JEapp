@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../theme.dart';
-import '../utils/list_notifier.dart';
+import '../utils/lazy_notifier.dart';
 import '../utils/background_service_handler.dart';
 import 'beat_circle.dart';
 import 'shot_player.dart';
@@ -30,28 +30,28 @@ class _MetronomeState extends State<Metronome> {
   // 初始化状态
   bool initialized = false;
 
-  // bpm关联一个视觉元素，用_handle的ValueNotifier
+  // bpm关联一个视觉元素，用_handle的LazyNotifier
   // 下面直接设置即可，无需setState
   int get bpm => _manager.bpm;
   set bpm(int newBPM) => _manager.bpm = newBPM;
 
   /// head区的选项
   // 静音
-  ValueNotifier<bool> muteNotifier = ValueNotifier<bool>(false);
+  LazyNotifier<bool> muteNotifier = LazyNotifier<bool>(false);
   // 震动
-  ValueNotifier<bool> vibrateNotifier = ValueNotifier<bool>(false);
+  LazyNotifier<bool> vibrateNotifier = LazyNotifier<bool>(false);
 
   // 节奏型 4种状态 静音为0 数字越大越重
-  final ListNotifier<ValueNotifier<int>> beatLevels = ListNotifier([
-    ValueNotifier<int>(3),
-    ValueNotifier<int>(1),
-    ValueNotifier<int>(2),
-    ValueNotifier<int>(1),
+  final LazyNotifier<List<LazyNotifier<int>>> beatLevels = LazyNotifier([
+    LazyNotifier<int>(3),
+    LazyNotifier<int>(1),
+    LazyNotifier<int>(2),
+    LazyNotifier<int>(1),
   ]);
   final LazyNotifier<int> _beatCnt = LazyNotifier<int>(0);
 
   // 是否展开panel
-  ValueNotifier<bool> panelExpanded = ValueNotifier<bool>(true);
+  LazyNotifier<bool> panelExpanded = LazyNotifier<bool>(true);
 
   @override
   void initState() {
@@ -274,7 +274,7 @@ class _MetronomeState extends State<Metronome> {
     return Column(
       spacing: 6,
       children: [
-        ValueListenableBuilder<List<ValueNotifier<int>>>(
+        ValueListenableBuilder<List<LazyNotifier<int>>>(
           valueListenable: beatLevels,
           builder: (context, value, child) {
             return Row(
@@ -328,7 +328,7 @@ class _MetronomeState extends State<Metronome> {
             IconButton(
               onPressed: () {
                 if (beatLevels.value.length >= 16) return;
-                beatLevels.value.add(ValueNotifier<int>(2));
+                beatLevels.value.add(LazyNotifier<int>(2));
                 beatLevels.notify();
               },
               icon: Icon(Icons.add),
@@ -437,7 +437,7 @@ class _MetronomeState extends State<Metronome> {
       return '';
     }
 
-    final labelNotifier = ValueNotifier<String>(getLabelText());
+    final labelNotifier = LazyNotifier<String>(getLabelText());
     controller.addListener(() {
       labelNotifier.value = getLabelText();
     });

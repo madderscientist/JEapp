@@ -18,8 +18,8 @@ class Search extends StatefulWidget {
 class _SearchState extends State<Search> {
   final myFocus = FocusNode();
   final TextEditingController controller = TextEditingController();
-  ValueNotifier<bool> collapseRightNow = ValueNotifier<bool>(true);
-  ValueNotifier<int> selectedSourceIndex = ValueNotifier<int>(0);
+  LazyNotifier<bool> collapseRightNow = LazyNotifier<bool>(true);
+  LazyNotifier<int> selectedSourceIndex = LazyNotifier<int>(0);
   static const List<String> jeSources = ["Github", "Acgmuse"];
 
   @override

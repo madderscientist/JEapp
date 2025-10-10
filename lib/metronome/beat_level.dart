@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import '../utils/lazy_notifier.dart';
 
 /// 调节重拍
 class BeatLevel extends StatefulWidget {
   final int id;
   final int level;
   final void Function(int)? onTap;
-  final ValueNotifier<int> beatTick;
+  final NotifierValueListenable<int> beatTick;
 
   const BeatLevel({
     super.key,

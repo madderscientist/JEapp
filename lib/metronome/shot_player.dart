@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:je/config.dart';
 
@@ -10,7 +9,7 @@ class ShotPlayer {
   List<AudioSource> beatSources = [];
 
   /// 不准直接设置 beatGroupNotifier.value
-  ValueNotifier<int> beatGroupNotifier = ValueNotifier<int>(0);
+  LazyNotifier<int> beatGroupNotifier = LazyNotifier<int>(0);
   set beatGroup(int group) {
     beatGroupNotifier.value = group % 3;
   }

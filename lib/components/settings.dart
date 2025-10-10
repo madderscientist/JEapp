@@ -16,15 +16,13 @@ class Settings extends StatefulWidget {
 }
 
 class _SettingsState extends State<Settings> {
-  final ValueNotifier<String> localScorePath = ValueNotifier('');
-  final ValueNotifier<bool> showBannerInput = ValueNotifier(
-    Config.networkBanner,
-  );
+  final LazyNotifier<String> localScorePath = LazyNotifier('');
+  final LazyNotifier<bool> showBannerInput = LazyNotifier(Config.networkBanner);
   final TextEditingController _bannerController = TextEditingController(
     text: Config.networkBannerURL,
   );
-  final ValueNotifier<bool> wakelockSwitch = ValueNotifier(Config.wakelock);
-  final ValueNotifier<int> selectedTimbre = ValueNotifier(Config.defaultTimbre);
+  final LazyNotifier<bool> wakelockSwitch = LazyNotifier(Config.wakelock);
+  final LazyNotifier<int> selectedTimbre = LazyNotifier(Config.defaultTimbre);
 
   @override
   void initState() {
@@ -213,10 +211,7 @@ class _SettingsState extends State<Settings> {
                 Config.defaultTimbre = newValue;
                 if (IsolateSynthesizer.created) {
                   IsolateSynthesizer.instance.send(
-                    ChangePreset(
-                      channel: 0,
-                      preset: Config.defaultTimbre,
-                    ),
+                    ChangePreset(channel: 0, preset: Config.defaultTimbre),
                   );
                 }
               }

@@ -30,7 +30,7 @@ class _GitHubLoginState extends State<GitHubLogin> {
   bool _step2Btn2Clicked = false;
 
   DateTime? _loginStartTime;
-  final ValueNotifier<int> _countdown = ValueNotifier<int>(0);
+  final LazyNotifier<int> _countdown = LazyNotifier(0);
   Timer? expireTimer;
 
   DateTime? _lastPollTime;
