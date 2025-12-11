@@ -11,7 +11,7 @@ class MdStyle {
   );
   static const codeblock = {
     "margin": EdgeInsets.symmetric(horizontal: 2),
-    "padding": EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+    "padding": EdgeInsets.symmetric(horizontal: 12, vertical: 6),
     "fontStyle": TextStyle(
       fontFamily: 'monospace',
       fontWeight: FontWeight.normal,

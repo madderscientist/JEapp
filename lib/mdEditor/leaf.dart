@@ -90,7 +90,7 @@ class Image extends MdSpan {
     return m.WidgetSpan(
       alignment: m.PlaceholderAlignment.middle,
       child: MdImageWidget(
-        // 很关键。不然通过长按修炼了src后图片不会更新
+        // 很关键。不然通过长按修改了src后图片不会更新
         key: ValueKey(src + hashCode.toString()),
         ast: this
       ),

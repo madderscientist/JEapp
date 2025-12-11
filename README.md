@@ -19,7 +19,7 @@
 
 ## [👉下载👈](https://github.com/madderscientist/JEapp/releases)
 
-仅提供Android安装包，大部分手机选择 [arm64](https://github.com/madderscientist/JEapp/releases/download/v1.0.1/app-arm64-v8a-release.apk) 即可。
+仅提供Android安装包，大部分手机选择 [arm64](https://github.com/madderscientist/JEapp/releases/download/v1.0.2/app-arm64-v8a-release.apk) 即可。
 
 使用 `Flutter` 开发以支持Android和IOS，但由于没有果系设备，仅保证Android端可用。没做平板的适配，仅适用于竖屏小屏幕。
 

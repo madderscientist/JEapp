@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:animations/animations.dart';
+import '../components/open_container.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../config.dart';
