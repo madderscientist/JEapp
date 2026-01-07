@@ -294,11 +294,15 @@ class _DetailState extends State<Detail> {
   // 文件保存相关
   Future<bool> save(BuildContext context) {
     if (local != null) {
+      final savedContent = MdNode.mdCode(ast);
       return local!.parent
           .create(recursive: true)
-          .then((_) => local!.writeAsString(MdNode.mdCode(ast)))
-          // ignore: use_build_context_synchronously
-          .then((_) => _saveSucceeded(context))
+          .then((_) => local!.writeAsString(savedContent))
+          .then((_) {
+            _lastSaved = savedContent;
+            // ignore: use_build_context_synchronously
+            return _saveSucceeded(context);
+          })
           // ignore: use_build_context_synchronously
           .catchError((e) => _saveFailed(context, e as Exception));
     } else {

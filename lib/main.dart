@@ -1,4 +1,3 @@
-import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:quick_actions/quick_actions.dart';
@@ -39,8 +38,7 @@ class Main extends StatefulWidget {
 
 class _MainState extends State<Main> {
   int _currentIndex = 0;
-  // bool _mainShowTop = false; // home是否在顶部
-  final LazyNotifier<bool> _mainShowTop = LazyNotifier(false);
+  final LazyNotifier<bool> _mainShowTop = LazyNotifier(false);  // home是否在顶部
   final ScrollController _homeScrollController = ScrollController();
 
   late final List<Widget> _pages = [
@@ -55,6 +53,7 @@ class _MainState extends State<Main> {
   @override
   void initState() {
     super.initState();
+    // quickAction 热启动正常，冷启动会有两个页面。在Tool.openPanel中进行了去重
     final QuickActions quickActions = const QuickActions();
     quickActions.initialize((String shortcutType) {
       switch (shortcutType) {
@@ -74,19 +73,6 @@ class _MainState extends State<Main> {
       const ShortcutItem(type: 'tool-tuner', localizedTitle: '调音器'),
       const ShortcutItem(type: 'tool-metronome', localizedTitle: '节拍器'),
     ]);
-    // 请求存储权限
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Permission.storage.request().then((status) {
-        if (!status.isGranted && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('没有存储权限，JE酱无法保存曲谱www'),
-              action: SnackBarAction(label: '去授权', onPressed: openAppSettings),
-            ),
-          );
-        }
-      });
-    });
   }
 
   @override

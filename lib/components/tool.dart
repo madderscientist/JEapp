@@ -39,41 +39,78 @@ class Tool extends StatelessWidget {
     );
   }
 
+  static bool _isNavigating = false;  // 由于Navigator.push异步，因此要锁一下
+
   static Future<void> openPanel(BuildContext context) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(title: const Text('转调/播放器')),
-          resizeToAvoidBottomInset: false,
-          body: SafeArea(
-            child: const Panel(padding: EdgeInsets.symmetric(horizontal: 6.0)),
+    if (_isRouteInStack(context, '/panel')) return;
+    _isNavigating = true;
+    try {
+      return Navigator.push(
+        context,
+        MaterialPageRoute(
+          settings: const RouteSettings(name: '/panel'),
+          builder: (context) => Scaffold(
+            appBar: AppBar(title: const Text('转调/播放器')),
+            resizeToAvoidBottomInset: false,
+            body: SafeArea(
+              child: const Panel(padding: EdgeInsets.symmetric(horizontal: 6.0)),
+            ),
           ),
         ),
-      ),
-    ).then((_) {
-      if (context.mounted) FocusScope.of(context).unfocus();
-    });
+      ).then((_) {
+        if (context.mounted) FocusScope.of(context).unfocus();
+      });
+    } finally {
+      Future.microtask(() => _isNavigating = false);
+    }
   }
 
-  static Future<void> openTuner(BuildContext context) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            Scaffold(body: SafeArea(top: true, bottom: false, child: Tuner())),
-      ),
-    ).then((_) {
-      if (context.mounted) FocusScope.of(context).unfocus();
-    });
+  static Future<void> openTuner(BuildContext context) async{
+    if (_isRouteInStack(context, '/tuner')) return;
+    _isNavigating = true;
+    try {
+      return Navigator.push(
+        context,
+        MaterialPageRoute(
+          settings: const RouteSettings(name: '/tuner'),
+          builder: (context) =>
+              Scaffold(body: SafeArea(top: true, bottom: false, child: Tuner())),
+        ),
+      ).then((_) {
+        if (context.mounted) FocusScope.of(context).unfocus();
+      });
+    } finally {
+      Future.microtask(() => _isNavigating = false);
+    }
   }
 
   static Future<void> openMetronome(BuildContext context) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => Material(child: Metronome())),
-    ).then((_) {
-      if (context.mounted) FocusScope.of(context).unfocus();
+    if (_isRouteInStack(context, '/metronome')) return;
+    _isNavigating = true;
+    try {
+      return Navigator.push(
+        context,
+        MaterialPageRoute(
+          settings: const RouteSettings(name: '/metronome'),
+          builder: (context) => Material(child: Metronome()),
+        ),
+      ).then((_) {
+        if (context.mounted) FocusScope.of(context).unfocus();
+      });
+    } finally {
+      Future.microtask(() => _isNavigating = false);
+    }
+  }
+
+  static bool _isRouteInStack(BuildContext context, String routeName) {
+    // 物理锁：如果上一个跳转还没完成，直接拦截
+    if (_isNavigating) return true;
+    bool exists = false;
+    Navigator.popUntil(context, (route) {
+      if (route.settings.name == routeName) exists = true;
+      // 返回 true 意味着“停止 pop”，所以这行代码不会真的关掉任何页面
+      return true;
     });
+    return exists;
   }
 }

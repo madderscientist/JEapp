@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:toastification/toastification.dart';
 
@@ -84,8 +86,27 @@ class ImageUtils {
     String? fileName,
   }) async {
     // 1. 请求权限
-    var status = await Permission.storage.request();
-    if (!status.isGranted) throw Exception('没有存储权限，请在设置中开启权限');
+    bool hasPermission = false;
+    if (Platform.isAndroid) {
+      final androidInfo = await DeviceInfoPlugin().androidInfo;
+      if (androidInfo.version.sdkInt <= 32) {
+        // Android 12 及以下，请求传统的存储权限
+        var status = await Permission.storage.request();
+        hasPermission = status.isGranted;
+      } else {
+        // Android 13 及以上，保存图片到相册理论上不需要运行时权限申请
+        // 因为 ImageGallerySaverPlus 使用 MediaStore API 插入新文件
+        hasPermission = true; 
+      }
+    } else if (Platform.isIOS) {
+      var status = await Permission.photos.request();
+      hasPermission = status.isGranted;
+    } else {
+      hasPermission = true; // 其他平台无需权限，虽然也没做
+    }
+    if (!hasPermission) {
+      throw Exception('没有存储权限，请在设置中开启权限');
+    }
 
     try {
       // 2. 获取图片数据

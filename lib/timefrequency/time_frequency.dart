@@ -152,11 +152,19 @@ class _TimeFrequencyState extends State<TimeFrequency>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('没有麦克风权限，JE酱听不到声音啦www'),
-          action: SnackBarAction(label: '去授权', onPressed: openAppSettings),
+          action: SnackBarAction(label: '去授权', onPressed: () {
+            // 先调用打开设置
+            openAppSettings();
+            // 然后立即关闭当前页面，回到上一级，防止用户授权后返回面对没有正常初始化的页面
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          }),
         ),
       );
+      return;
     }
-
+    if (!mounted) return;
     // PCM16 但是数据是 Uint8
     final recordStream = await recorder.startStream(
       const RecordConfig(
