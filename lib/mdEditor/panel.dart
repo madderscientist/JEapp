@@ -528,7 +528,7 @@ class _PanelState extends State<Panel> {
         ElevatedButton(
           onPressed: () {
             final result = JeScoreOperator.simplified(_mainController.text);
-            _mainController.text = result.result;
+            _mainController.text = _niceBrackets(result.result);
             late String title;
             if (result.times < 0) {
               title = '降${-result.times}调';
