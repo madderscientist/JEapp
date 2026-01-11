@@ -20,7 +20,7 @@ class YIN {
   /// 原论文实现的 slowDifference: 时域算法
   void difference(final List<double> input) {
     buffer[0] = 0;
-    for (int tau = 0; tau < buffer.length; tau++) {
+    for (int tau = 1; tau < buffer.length; tau++) {
       buffer[tau] = 0;
       // 两个差异窗口从input中心向两边移动
       final int startPoint = (buffer.length - tau) >> 1;
