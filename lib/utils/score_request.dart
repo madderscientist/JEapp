@@ -11,7 +11,7 @@ class IssueRequester {
   static const int resultScale = 1000;
   static const String baseUrl =
       "https://api.github.com/repos/zytx121/je/issues";
-  final http.Client? client;  // 外部传入，外部管理
+  final http.Client? client; // 外部传入，外部管理
   String _nextUrl = "";
   int perPage;
   int issueNumber = -1; // 记录总共请求了多少个issues -1表示没开始 用以兼容resultScale=0的情况
@@ -163,6 +163,9 @@ class RawScore {
 
   static List<RawScore> parseAcgmuse(Map<String, dynamic> rawScoreList) {
     List<RawScore> result = [];
+    if (!rawScoreList.containsKey('included') || !rawScoreList.containsKey('data')) {
+      return result;
+    }
     final details = rawScoreList['included'] as List<dynamic>;
     final titles = rawScoreList['data'] as List<dynamic>;
     for (var i = 0; i < details.length; i++) {

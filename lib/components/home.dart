@@ -55,7 +55,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     _searchBarSpeedRatio = _searchBarTravelDistance / listTravelDistance;
   }
 
-  void _onScroll() {
+  void _onScroll([int tryTimes = 0]) {
     // 通知父元素使用/取消“回到顶部”按钮 Notifier自带防抖
     widget.show2top?.value = scrollController.offset > _initScoreListTop;
     // 更新 搜索框(位置依赖scrollOffset)
@@ -65,9 +65,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     if (scrollController.position.pixels >
             scrollController.position.maxScrollExtent - 100 &&
         _issueRequester.isLoading == false) {
-      _fetchScores(context).then((_) {
+      _fetchScores(context).then((success) {
+        if (tryTimes >= 2) return; // 最多尝试2次 tryTimes仅会在请求失败时增加
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _onScroll(); // 若高度还是不够，继续请求 但要等到build完成
+          // 若高度还是不够，继续请求 但要等到build完成
+          // 失败则累加tryTimes
+          _onScroll(success ? 0 : tryTimes + 1);
         });
       });
     }
@@ -105,7 +108,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     client: _issueRequestClient,
   );
   final LazyNotifier<List<RawScore>> _scores = LazyNotifier([]);
-  Future<void> _fetchScores(BuildContext context, {bool reset = false}) async {
+  // 返回值表示是否成功 用于_onScroll的重试机制
+  Future<bool> _fetchScores(BuildContext context, {bool reset = false}) async {
     try {
       final p = _issueRequester.fetchIssues(reset: reset);
       _scores.notify();
@@ -113,23 +117,26 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       if (reset) _scores.value.clear();
       _scores.value.addAll(result);
     } catch (e) {
-      if (!context.mounted) return;
-      toastification.show(
-        context: context,
-        type: (e is StateError)
-            ? ToastificationType.info
-            : ToastificationType.error,
-        style: ToastificationStyle.flatColored,
-        title: Text(e.toString().split(':').last),
-        alignment: Alignment.topCenter,
-        autoCloseDuration: const Duration(seconds: 3),
-        borderRadius: BorderRadius.circular(12.0),
-        showProgressBar: false,
-        dragToClose: true,
-        applyBlurEffect: true,
-      );
+      if (context.mounted) {
+        toastification.show(
+          context: context,
+          type: (e is StateError)
+              ? ToastificationType.info
+              : ToastificationType.error,
+          style: ToastificationStyle.flatColored,
+          title: Text(e.toString().split(':').last),
+          alignment: Alignment.topCenter,
+          autoCloseDuration: const Duration(seconds: 3),
+          borderRadius: BorderRadius.circular(12.0),
+          showProgressBar: false,
+          dragToClose: true,
+          applyBlurEffect: true,
+        );
+      }
+      return false;
     }
     _scores.notify();
+    return true;
   }
 
   Future<void> _onRefresh(BuildContext context) async {
