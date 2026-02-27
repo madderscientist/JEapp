@@ -1,20 +1,89 @@
+import 'dart:math' as math;
+
 class YIN {
   int frameSize;
   int sampleRate;
   double threshold;
   List<double> buffer;
 
-  YIN({this.frameSize = 2048, this.sampleRate = 22050, this.threshold = 0.2})
-    : buffer = List<double>.filled(frameSize ~/ 2, 0.0);
+  // 预计算的滤波器系数 原论文表明滤波有效
+  late double _hpB0, _hpB1, _hpB2, _hpA1, _hpA2;
+  late double _lpB0, _lpB1, _lpB2, _lpA1, _lpA2;
+
+  YIN({
+    this.frameSize = 2048,
+    this.sampleRate = 22050,
+    this.threshold = 0.22,
+    double lpfCutoff = 5000,  // 5k幅度变为一半 比较宽裕
+    double hpfCutoff = 30,
+  }) : buffer = List<double>.filled(frameSize ~/ 2, 0.0) {
+    // buffer长度为frameSize的一半，频率下限为sampleRate*2/frameSize=21Hz
+    _computeHPF(hpfCutoff);
+    _computeLPF(lpfCutoff);
+  }
+
+ void _computeHPF(double freq) {
+    double omega = 2.0 * math.pi * freq / sampleRate;
+    double sn = math.sin(omega);
+    double cs = math.cos(omega);
+    double alpha = sn / (2.0 * 0.7071);
+
+    double b0 = (1 + cs) / 2;
+    double b1 = -(1 + cs);
+    double b2 = (1 + cs) / 2;
+    double a0 = 1 + alpha;
+    double a1 = -2 * cs;
+    double a2 = 1 - alpha;
+
+    _hpB0 = b0 / a0; _hpB1 = b1 / a0; _hpB2 = b2 / a0;
+    _hpA1 = a1 / a0; _hpA2 = a2 / a0;
+  }
+
+  void _computeLPF(double freq) {
+    double omega = 2.0 * math.pi * freq / sampleRate;
+    double sn = math.sin(omega);
+    double cs = math.cos(omega);
+    double alpha = sn / (2.0 * 0.7071);
+
+    double b0 = (1 - cs) / 2;
+    double b1 = 1 - cs;
+    double b2 = (1 - cs) / 2;
+    double a0 = 1 + alpha;
+    double a1 = -2 * cs;
+    double a2 = 1 - alpha;
+
+    _lpB0 = b0 / a0; _lpB1 = b1 / a0; _lpB2 = b2 / a0;
+    _lpA1 = a1 / a0; _lpA2 = a2 / a0;
+  }
 
   /// input.length = frameSize
   /// 负数表示未找到符合条件的音高
   double getPitch(final List<double> input) {
+    _applyBandPassInPlace(input);
     difference(input);
     cumulativeMeanNormalizedDifference();
     final int tau = absoluteThreshold();
     final double f0 = tau.sign * sampleRate / parabolicInterpolation(tau.abs());
     return f0;
+  }
+
+  /// 使用预计算系数进行原位滤波
+  void _applyBandPassInPlace(List<double> data) {
+    double hpx1 = 0, hpx2 = 0, hpy1 = 0, hpy2 = 0;
+    double lpx1 = 0, lpx2 = 0, lpy1 = 0, lpy2 = 0;
+    for (int i = 0; i < data.length; i++) {
+      double x = data[i];
+      // 高通
+      double hpOut = _hpB0 * x + _hpB1 * hpx1 + _hpB2 * hpx2 - _hpA1 * hpy1 - _hpA2 * hpy2;
+      hpx2 = hpx1; hpx1 = x;
+      hpy2 = hpy1; hpy1 = hpOut;
+      // 低通
+      double lpOut = _lpB0 * hpOut + _lpB1 * lpx1 + _lpB2 * lpx2 - _lpA1 * lpy1 - _lpA2 * lpy2;
+      lpx2 = lpx1; lpx1 = hpOut;
+      lpy2 = lpy1; lpy1 = lpOut;
+      // 原位写回
+      data[i] = lpOut; 
+    }
   }
 
   /// 原论文实现的 slowDifference: 时域算法

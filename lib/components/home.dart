@@ -99,7 +99,20 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           _bgImageNotifier.value = img;
         })
         .catchError((_) {
-          debugPrint('@Failed to load remote image: $url');
+          if (context.mounted) {
+            toastification.show(
+              context: context,
+              type: ToastificationType.error,
+              style: ToastificationStyle.flatColored,
+              title: const Text('网络图片加载失败了 ╥﹏╥'),
+              alignment: Alignment.topCenter,
+              autoCloseDuration: const Duration(seconds: 3),
+              borderRadius: BorderRadius.circular(12.0),
+              showProgressBar: false,
+              dragToClose: true,
+              applyBlurEffect: true,
+            );
+          }
         }); // 网络失败不处理，保持之前的图片
   }
 
