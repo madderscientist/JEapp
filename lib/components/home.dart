@@ -95,6 +95,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     ImageUtils.loadUIImage(NetworkImage(url))
         .then((img) {
           netsetted = true;
+          _bgImageNotifier.value?.dispose();
           _bgImageNotifier.value = img;
         })
         .catchError((_) {
@@ -110,6 +111,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   final LazyNotifier<List<RawScore>> _scores = LazyNotifier([]);
   // 返回值表示是否成功 用于_onScroll的重试机制
   Future<bool> _fetchScores(BuildContext context, {bool reset = false}) async {
+    bool success = true;
     try {
       final p = _issueRequester.fetchIssues(reset: reset);
       _scores.notify();
@@ -117,6 +119,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       if (reset) _scores.value.clear();
       _scores.value.addAll(result);
     } catch (e) {
+      success = false;
       if (context.mounted) {
         toastification.show(
           context: context,
@@ -133,10 +136,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           applyBlurEffect: true,
         );
       }
-      return false;
     }
     _scores.notify();
-    return true;
+    return success;
   }
 
   Future<void> _onRefresh(BuildContext context) async {
@@ -161,6 +163,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   void dispose() {
     scrollController.dispose();
     focusNode.dispose();
+    _bgImageNotifier.value?.dispose();
     _bgImageNotifier.dispose();
     _issueRequestClient.close();
     scrollOffsetNotifier.dispose();

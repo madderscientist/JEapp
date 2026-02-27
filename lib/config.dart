@@ -123,7 +123,7 @@ class Config {
   /// @brief 获取网络头图的URL
   static String get networkBannerURL {
     return pref.getString(_networkBannerURLKey) ??
-        'https://imgapi.lie.moe/random?sort=random';
+        'https://api.elaina.cat/random/mobile';
   }
 
   static set networkBannerURL(String? value) {
