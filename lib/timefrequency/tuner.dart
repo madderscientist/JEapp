@@ -213,7 +213,7 @@ class _TunerState extends State<Tuner> {
           ),
         ),
         Transform.translate(
-          offset: Offset(0, -70),
+          offset: Offset(0, -64),
           child: Text(
             tip,
             style: TextStyle(
@@ -554,7 +554,7 @@ TextSpan buildSupSub({
   required TextStyle style,
 }) {
   final smallStyle = style.copyWith(fontSize: style.fontSize! * 0.45);
-  double offset = smallStyle.fontSize! * 0.35; // 上下标偏移量
+  double offset = smallStyle.fontSize! * 0.3; // 上下标偏移量
   return TextSpan(
     style: style,
     children: [

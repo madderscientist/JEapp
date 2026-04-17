@@ -16,7 +16,7 @@ class TimeFrequency extends StatefulWidget {
   final FreqTable freqTable;
   final LazyNotifier<bool> autoTrackNotifier;
   final LazyNotifier<double>? freqNotifier; // 实时频率
-  final NotifierValueListenable<double>? pitchNotifier; // 稳定后的音高
+  final NotifierValueListenable<double>? pitchNotifier; // 当前音高在FreqTable中的位置
   final LazyNotifier<double>? normedCenterNotifier; // 中心音符
   final LazyNotifier<double>? sensitivityNotifier;
   const TimeFrequency({
@@ -68,7 +68,10 @@ class _TimeFrequencyState extends State<TimeFrequency>
     _updateViewLeft();
   }
 
+  /// 视野左侧距离世界左侧的像素
   double _viewLeft = 0;
+
+  /// 每个半音占的像素宽度
   double _semiToneWidth = 60;
   set semiToneWidth(double value) {
     _semiToneWidth = value.clamp(w / 36, w2 - 8);
@@ -77,13 +80,13 @@ class _TimeFrequencyState extends State<TimeFrequency>
   }
 
   AnimationController? _tempController;
-  double w = 2;
-  double w2 = 1;
+  double w = 2; // constraints.maxWidth
+  double w2 = 1; // constraints.maxWidth / 2
   void _updateViewLeft() {
     _viewLeft = (viewCenterNorm * _semiToneWidth - w2).clamp(
       -w2,
       _canvasWidth - w2,
-    );
+    ); // clamp的目的是让世界的边缘(最高/低频)可以显示在屏幕中心
     viewCenterNormNotifier.value = (_viewLeft + w2) / _semiToneWidth;
   }
 
@@ -126,7 +129,7 @@ class _TimeFrequencyState extends State<TimeFrequency>
     viewCenterNorm = _canvasWidth / 2 / _semiToneWidth;
     widget.autoTrackNotifier.addListener(() {
       if (widget.autoTrackNotifier.value) {
-        // 处理无数据时
+        // 处理无数据时 此时返回-1
         stablePitch = pitches.value.latest;
         if (stablePitch < 0) stablePitch = viewCenterNorm;
         _animation2Center(stablePitch);
@@ -142,24 +145,27 @@ class _TimeFrequencyState extends State<TimeFrequency>
     } else {
       yin.threshold = 0.2; // 默认灵敏度
     }
-    _init();
+    _initStream();
   }
 
   // 更新 freqs
-  Future<void> _init() async {
+  Future<void> _initStream() async {
     if (await Permission.microphone.request() != PermissionStatus.granted) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('没有麦克风权限，JE酱听不到声音啦www'),
-          action: SnackBarAction(label: '去授权', onPressed: () {
-            // 先调用打开设置
-            openAppSettings();
-            // 然后立即关闭当前页面，回到上一级，防止用户授权后返回面对没有正常初始化的页面
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
-          }),
+          action: SnackBarAction(
+            label: '去授权',
+            onPressed: () {
+              // 先调用打开设置
+              openAppSettings();
+              // 然后立即关闭当前页面，回到上一级，防止用户授权后返回面对没有正常初始化的页面
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              }
+            },
+          ),
         ),
       );
       return;
@@ -184,15 +190,15 @@ class _TimeFrequencyState extends State<TimeFrequency>
 
     final nopeak = NoPeak(
       dataOutfn: (f) {
-        // 按440Hz计算音高 如果以后更改 A4 频率，只需要加上偏移量
-        final pitch = musiclog2(f / 440) + FreqTable.A4at;
-        widget.pitchNotifier?.value = pitch;
+        // 需要 -musiclog2(widget.freqTable.A4) 才是真实"midi"音高
+        final rPitch = musiclog2(f) + FreqTable.A4at; // relative
+        widget.pitchNotifier?.value = rPitch - musiclog2(widget.freqTable.A4);
         if (stablePitch < 0) {
-          stablePitch = pitch;
+          stablePitch = rPitch;
         } else {
-          stablePitch = stablePitch * 0.95 + pitch * 0.05;
+          stablePitch = stablePitch * 0.95 + rPitch * 0.05;
         }
-        pitches.value.push(pitch);
+        pitches.value.push(rPitch);
         pitches.notify();
       },
     );
@@ -217,14 +223,11 @@ class _TimeFrequencyState extends State<TimeFrequency>
     super.dispose();
   }
 
+  /// 整个频率范围(世界)的像素宽度
   double get _canvasWidth => widget.freqTable.length * _semiToneWidth;
 
-  static double musiclog2(double f) {
-    return 12 * math.log(f) / math.ln2;
-  }
-
-  double pitch2Px(double pitch) =>
-      _semiToneWidth * (pitch + musiclog2(440 / widget.freqTable.A4));
+  /// 频率转换为音乐对数刻度
+  static double musiclog2(double f) => 12 * math.log(f) / math.ln2;
 
   @override
   Widget build(BuildContext context) {
@@ -241,6 +244,7 @@ class _TimeFrequencyState extends State<TimeFrequency>
             isDragging = true;
           },
           onHorizontalDragUpdate: (details) {
+            // 同_updateViewLeft的逻辑
             _viewLeft = (_viewLeft - details.delta.dx).clamp(
               -w2,
               _canvasWidth - w2,
@@ -270,14 +274,17 @@ class _TimeFrequencyState extends State<TimeFrequency>
             builder: (context, latestArray, child) {
               // 自动移动视野 以稳定频率为中心 如果最后一个频率超出则以其为准
               if (_userHolding == false) {
+                double pitchOffset = musiclog2(widget.freqTable.A4);
                 double p = latestArray.latest;
-                if (p < 0) p = viewCenterNorm;
-                final pAt = pitch2Px(p);
+                if (p < 0) p = viewCenterNorm; // 无数据时返回-1
+                // 当前频率在屏幕上的位置
+                final pAt = _semiToneWidth * (p - pitchOffset);
                 if (widget.autoTrackNotifier.value && _tempController == null) {
                   final centerPx = stablePitch > 0
-                      ? pitch2Px(stablePitch)
+                      ? _semiToneWidth * (stablePitch - pitchOffset)
                       : (_canvasWidth / 2);
                   double viewLeft = centerPx - w2;
+                  // 保持当前频率在屏幕内
                   if (pAt < viewLeft) {
                     viewLeft = pAt - _semiToneWidth / 2;
                   } else if (pAt > viewLeft + w) {
@@ -288,7 +295,8 @@ class _TimeFrequencyState extends State<TimeFrequency>
                     _viewLeft = viewLeft;
                     viewCenterNormNotifier.value =
                         (viewLeft + w2) / _semiToneWidth;
-                    stablePitch = viewCenterNorm;
+                    // 转换回频率域
+                    stablePitch = viewCenterNorm + pitchOffset;
                   }
                 } else if (!widget.autoTrackNotifier.value) {
                   // 根据当前音高自适应拓展范围
@@ -393,13 +401,11 @@ class _TimeFrequencyPainter extends CustomPainter {
 
     // 绘制频率线 平滑+渐变
     final double step = (lY - hY) / pitches.size();
-    final double pitchOffset = _TimeFrequencyState.musiclog2(
-      440 / freqTable.A4,
-    );
+    final double pitchOffset = _TimeFrequencyState.musiclog2(freqTable.A4);
     double y = lY;
     final points = <Offset>[];
     for (final p in pitches.values) {
-      final px = semiToneWidth * (p + pitchOffset) - viewLeft;
+      final px = semiToneWidth * (p - pitchOffset) - viewLeft;
       points.add(Offset(px, y));
       y -= step;
     }
