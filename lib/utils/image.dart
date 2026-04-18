@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -19,6 +20,12 @@ enum ImageType { local, network, base64 }
 class ImageUtils {
   ImageUtils._();
 
+  /// 网易云音乐会拦截无此header的图片请求
+  static const Map<String, String> _networkImageHeaders = {
+    'User-Agent':
+        'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+  };
+
   static ImageType judgeImageType(String src) {
     if (src.startsWith('http')) {
       return ImageType.network;
@@ -31,8 +38,8 @@ class ImageUtils {
 
   static ImageProvider getImageProvider(String src) {
     switch (judgeImageType(src)) {
-      case ImageType.network:
-        return NetworkImage(src);
+      case ImageType.network: // NetworkImage 就算有header也会被拦截
+        return CachedNetworkImageProvider(src, headers: _networkImageHeaders);
       case ImageType.local:
         return AssetImage(src);
       case ImageType.base64:
@@ -40,13 +47,29 @@ class ImageUtils {
     }
   }
 
+  /// 判断当前 ImageProvider 是否来自网络。
+  static bool isNetworkProvider(ImageProvider provider) {
+    return provider is CachedNetworkImageProvider || provider is NetworkImage;
+  }
+
   /// 根据图片路径获取图片的字节数据
   static Future<Uint8List> getImageBytesFromSrc(String src) async {
     switch (judgeImageType(src)) {
       case ImageType.network:
-        final response = await http.get(Uri.parse(src));
+        final response = await http.get(
+          Uri.parse(src),
+          headers: _networkImageHeaders,
+        );
         if (response.statusCode != 200) {
-          throw Exception('下载图片失败: ${response.statusCode}');
+          final contentType = response.headers['content-type'] ?? 'unknown';
+          final location = response.headers['location'];
+          final body = response.body.replaceAll(RegExp(r'\s+'), ' ').trim();
+          final bodyPreview = body.isEmpty
+              ? '<empty>'
+              : body.substring(0, body.length > 180 ? 180 : body.length);
+          throw Exception(
+            '下载图片失败: HTTP ${response.statusCode}, content-type=$contentType${location == null ? '' : ', location=$location'}, body=$bodyPreview',
+          );
         }
         return response.bodyBytes;
       case ImageType.local:
@@ -327,7 +350,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                   },
                 ),
               if (widget.onChange != null &&
-                  _imageProviderNotifier.value is NetworkImage)
+                  ImageUtils.isNetworkProvider(_imageProviderNotifier.value))
                 ListTile(
                   leading: const Icon(Icons.sync),
                   title: const Text('内嵌入文档(保存后离线可看,显著增大文件,不推荐)'),

@@ -330,7 +330,7 @@ class _MdImageWidgetState extends State<MdImageWidget> {
           ),
         );
       },
-      // 使用OpenContainer时Hero动画会有问题
+      // 使用OpenContainer时Hero动画会有问题 所以修改了OpenContainer
       child: Hero(
         tag: herotag,
         child: ValueListenableBuilder<ImageProvider>(
@@ -341,6 +341,22 @@ class _MdImageWidgetState extends State<MdImageWidget> {
               width: widget.ast.w,
               height: widget.ast.h,
               gaplessPlayback: true,
+              errorBuilder: (context, error, stackTrace) {
+                debugPrint('@MdImageWidget 图片加载失败: $error');
+                return Container(
+                  width: widget.ast.w,
+                  height: widget.ast.h,
+                  alignment: Alignment.center,
+                  color: Colors.black.withAlpha(12),
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    size: widget.ast.w != null && widget.ast.h != null
+                        ? 24
+                        : MdStyle.imageLoadingSize,
+                    color: Colors.grey[500],
+                  ),
+                );
+              },
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) return child;
                 return Center(
