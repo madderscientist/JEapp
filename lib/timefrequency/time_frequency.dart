@@ -277,8 +277,9 @@ class _TimeFrequencyState extends State<TimeFrequency>
                 double pitchOffset = musiclog2(widget.freqTable.A4);
                 double p = latestArray.latest;
                 if (p < 0) p = viewCenterNorm; // 无数据时返回-1
+                p -= pitchOffset;
                 // 当前频率在屏幕上的位置
-                final pAt = _semiToneWidth * (p - pitchOffset);
+                final pAt = _semiToneWidth * p;
                 if (widget.autoTrackNotifier.value && _tempController == null) {
                   final centerPx = stablePitch > 0
                       ? _semiToneWidth * (stablePitch - pitchOffset)
