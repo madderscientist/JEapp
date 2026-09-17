@@ -43,16 +43,6 @@
 │  main.dart    【程序入口】
 │  theme.dart   【默认样式】
 │
-├─audioGraph    【弃用。模仿WebAudioAPI的合成器】
-│      audio_context.dart
-│      audio_node.dart
-│      audio_param.dart
-│      connectable.dart
-│      example.dart
-│      note.dart
-│      README.md
-│      value_schedule.dart
-│  
 ├─components
 │      bgimg.dart   【home的头图】
 │      capsule_selector.dart    【search的源选择】
