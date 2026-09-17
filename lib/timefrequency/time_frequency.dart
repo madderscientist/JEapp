@@ -494,13 +494,13 @@ Stream<List<T>> _bufferedListStream<T>(
   // }
 }
 
-/// Converts PCM16 encondig to float.
-extension _PCMConversions on Uint8List {
+/// Converts signed little-endian PCM16 samples to normalized floats.
+extension PCMConversions on Uint8List {
   List<double> convertPCM16ToFloat() {
-    ByteData byteData = buffer.asByteData();
+    ByteData byteData = ByteData.sublistView(this);
     List<double> floatList = [
       for (var offset = 0; offset < length; offset += 2)
-        ((byteData.getUint16(offset)) - 32768) / 32768,
+        byteData.getInt16(offset, Endian.little) / 32768,
     ];
     return floatList;
   }

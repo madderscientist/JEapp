@@ -1012,6 +1012,8 @@ class _PanelState extends State<Panel> {
 
   void _playBtnAction() async {
     if (_playing.value == null) return;
+    final wasPlaying = _playing.value == true;
+    _playing.value = null;
     if (!initCompleter.isCompleted) {
       IsolateSynthesizer.instance.onReceive = (dynamic msg) {
         switch (msg) {
@@ -1040,12 +1042,12 @@ class _PanelState extends State<Panel> {
         await initCompleter.future;
       }
     }
-    if (_playing.value == true) {
+    if (!mounted) return;
+    if (wasPlaying) {
       IsolateSynthesizer.instance.send(StopAudio());
     } else {
       IsolateSynthesizer.instance.send(StartAudio());
     }
-    _playing.value = null; // 设置为等待响应状态
   }
 
   // 会等待的字符

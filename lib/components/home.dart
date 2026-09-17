@@ -174,7 +174,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    scrollController.dispose();
+    scrollController.removeListener(_onScroll);
+    if (widget.scrollController == null) {
+      scrollController.dispose();
+    }
     focusNode.dispose();
     _bgImageNotifier.value?.dispose();
     _bgImageNotifier.dispose();

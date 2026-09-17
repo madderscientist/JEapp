@@ -24,19 +24,9 @@ jobs:
                   distribution: "zulu"
                   java-version: "17"
 
-            - name: 检查缓存
-              uses: actions/cache@v4
-              id: cache-flutter
-              with:
-                  path: /root/flutter-sdk # Flutter SDK 的路径
-                  key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
-
             - name: 安装Flutter
-              if: steps.cache-flutter.outputs.cache-hit != 'true'
               uses: subosito/flutter-action@v2
-              with:
-                  flutter-version: 3.38.10
-                  channel: any
+              with: { flutter-version: '3.47.4', channel: stable, cache: true }
 
             - name: 下载项目依赖
               run: flutter pub get

@@ -110,16 +110,19 @@ class _GitHubLoginState extends State<GitHubLogin> {
     });
   }
 
-  bool get _canPoll => _countdown.value > 0 && _step == 1;
+  bool get _canPoll => mounted && _countdown.value > 0 && _step == 1;
 
   /// 查询一次登录状态 管理间隔与状态
   /// 轮询结束则返回false 可以继续轮询则返回true
   Future<void> _query() async {
+    if (!mounted) return;
     if (_countdown.value <= 0) {
       _onTimeOver();
       return;
     }
     if (_canPoll == false) return;
+    final deviceAuth = _deviceAuth;
+    bool isCurrentQuery() => _canPoll && identical(_deviceAuth, deviceAuth);
     // 等待至少间隔时间
     final now = DateTime.now();
     if (_lastPollTime != null) {
@@ -134,7 +137,7 @@ class _GitHubLoginState extends State<GitHubLogin> {
     // 查询登录状态
     late final http.Response tRes;
     try {
-      if (_canPoll == false) return;
+      if (!isCurrentQuery()) return;
       tRes = await http
           .post(
             Uri.parse('https://github.com/login/oauth/access_token'),
@@ -147,6 +150,7 @@ class _GitHubLoginState extends State<GitHubLogin> {
           )
           .timeout(const Duration(seconds: 15));
     } catch (e) {
+      if (!isCurrentQuery()) return;
       setState(() {
         _errorMessage = '查询失败: ${e.toString()}\n这可能是网络问题，请重试';
         _step2Btn1Clicked = true;
@@ -154,6 +158,7 @@ class _GitHubLoginState extends State<GitHubLogin> {
       });
       return;
     }
+    if (!isCurrentQuery()) return;
     final t = jsonDecode(tRes.body);
     if (t.containsKey('access_token')) {
       expireTimer?.cancel();
@@ -171,6 +176,7 @@ class _GitHubLoginState extends State<GitHubLogin> {
         return;
       case 'slow_down':
         await Future.delayed(const Duration(seconds: 5));
+        if (!isCurrentQuery()) return;
         setState(() {
           _errorMessage = '等待用户授权中...\n此外你点击得太频繁啦！';
           _step2Btn1Clicked = true;
@@ -249,6 +255,7 @@ class _GitHubLoginState extends State<GitHubLogin> {
           });
           DeviceAuth.fromGithub()
               .then((deviceAuth) {
+                if (!mounted) return;
                 _deviceAuth = deviceAuth;
                 // 记录登录开始时间
                 _loginStartTime = DateTime.now();
@@ -257,6 +264,7 @@ class _GitHubLoginState extends State<GitHubLogin> {
                 _nextStep();
               })
               .catchError((e) {
+                if (!mounted) return;
                 setState(() {
                   expireTimer?.cancel();
                   _errorMessage = '错误: ${e.toString()}\n请检查网络连接';
@@ -293,11 +301,13 @@ class _GitHubLoginState extends State<GitHubLogin> {
       } else {
         queryBtn = ElevatedButton(
           onPressed: () {
+            final deviceAuth = _deviceAuth;
             setState(() {
               _errorMessage = '';
               _step2Btn2Clicked = true;
             });
             _query().whenComplete(() {
+              if (!_canPoll || !identical(_deviceAuth, deviceAuth)) return;
               setState(() {
                 _step2Btn2Clicked = false;
               });
@@ -337,6 +347,7 @@ class _GitHubLoginState extends State<GitHubLogin> {
       step2to3UI = ElevatedButton(
         onPressed: () async {
           if (_step2Btn1Clicked) return;
+          final deviceAuth = _deviceAuth;
           setState(() {
             _step2Btn1Clicked = true;
           });
@@ -346,6 +357,7 @@ class _GitHubLoginState extends State<GitHubLogin> {
               LaunchMode.externalApplication,
             );
           } catch (e) {
+            if (!_canPoll || !identical(_deviceAuth, deviceAuth)) return;
             setState(() {
               _errorMessage = '打开浏览器失败: ${e.toString()}\n请手动打开链接';
             });

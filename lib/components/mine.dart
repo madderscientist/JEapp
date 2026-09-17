@@ -139,7 +139,7 @@ class _MineState extends State<Mine> {
         ],
       ),
     );
-    if (confirmed == false) return;
+    if (confirmed != true) return;
     final title = p.basenameWithoutExtension(f.path);
     final body = await f.readAsString();
     if (!mounted) return;

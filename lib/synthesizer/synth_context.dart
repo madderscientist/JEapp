@@ -68,6 +68,7 @@ class SynthContext {
   }
 
   Future<void> start() async {
+    if (handle != null) return;
     if (stream == null) await initSoLoudStream();
 
     // 播放前预填一块，避免设备启动后立即读到空流

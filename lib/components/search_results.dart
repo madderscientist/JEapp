@@ -25,10 +25,12 @@ class _SearchResultsListState extends State<SearchResultsList> {
     super.initState();
     widget.request
         .then((value) {
+          if (!mounted) return;
           FocusManager.instance.primaryFocus?.unfocus();
           setState(() => scores = value);
         })
         .catchError((error) {
+          if (!mounted) return;
           FocusManager.instance.primaryFocus?.unfocus();
           setState(() => failed = error.toString());
         });
