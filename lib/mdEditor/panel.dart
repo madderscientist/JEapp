@@ -1087,6 +1087,9 @@ class _PanelState extends State<Panel> {
       }
     }
     _playAt.value = -1; // 播放结束后重置播放位置
+    if (_playing.value == true) {
+      _playBtnAction();
+    }
   }
 
   static const double bpmMax = 500;

@@ -40,18 +40,18 @@ class SynthContext {
     synthesizer!.selectPreset(channel: 0, preset: 0);
   }
 
-  static const fillBufferSize = 768; // 要大于512 太小不播放且卡顿
-  int get maxBufferSize => fillBufferSize * 3;
+  static const fillBufferSize = 512;
+  static const maxBufferSize = fillBufferSize * 4;  // 3倍无声
   final _samples = Float32List(fillBufferSize);
   final int fillBufferMicroseconds;
   SoundHash? stream;
   SoundHandle? handle;
   Timer? _check;
   Future<void> initSoLoudStream() async {
-    // 使用共享原生引擎，不在后台重新初始化或接管主线程回调。
+    // 使用共享原生引擎，不在后台重新初始化或接管主线程回调
     await stop();
     final result = _soloud.setBufferStream(
-      (maxBufferSize + fillBufferSize) * Float32List.bytesPerElement,
+      maxBufferSize * Float32List.bytesPerElement,
       BufferingType.released,
       0,
       sampleRate,
@@ -70,16 +70,16 @@ class SynthContext {
   Future<void> start() async {
     if (stream == null) await initSoLoudStream();
 
-    // 预填三块静音；第四块容量留给原生缓冲的延迟回收
+    // 播放前预填一块，避免设备启动后立即读到空流
     final error = _soloud.addAudioDataStream(
       stream!.hash,
-      Float32List(maxBufferSize).buffer.asUint8List(),
+      Float32List(fillBufferSize).buffer.asUint8List(),
     );
     // ignore: invalid_use_of_internal_member
     if (error != PlayerErrors.noError) {
       throw SoLoudCppException.fromPlayerError(error);
     }
-    currentTime += maxBufferSize / sampleRate;
+    currentTime += fillBufferSize / sampleRate;
 
     final result = _soloud.play(stream!);
     // ignore: invalid_use_of_internal_member
