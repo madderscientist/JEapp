@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import '../theme.dart';
 import '../utils/lazy_notifier.dart';
 import 'branch.dart';
 import 'leaf.dart' as leaf;
@@ -103,7 +104,7 @@ class MdH extends MdInlineWidget {
     : super(
         style: TextStyle(
           fontSize: MdStyle.hFontSize[level - 1],
-          fontWeight: FontWeight.bold,
+          fontWeight: AdaptedFontWeight.bold,
         ),
       );
 }

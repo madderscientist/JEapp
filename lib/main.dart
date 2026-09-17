@@ -19,7 +19,10 @@ void main() async {
     ),
   );
 
-  await Config.init(); // 初始化 pref 和相关配置
+  await Future.wait<void>([
+    Config.init(), // 初始化 pref 和相关配置
+    AppTheme.initSystemFont(), // MiSans 字体特判
+  ]);
   runApp(
     MaterialApp(
       title: 'justice eternal',

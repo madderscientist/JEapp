@@ -86,7 +86,10 @@ class _TunerState extends State<Tuner> {
               ' ${value < 0 ? "???" : value.toStringAsPrecision(5)}Hz',
               style: Theme.of(
                 context,
-              ).textTheme.headlineMedium?.copyWith(fontFamily: 'monospace'),
+              ).textTheme.headlineMedium?.copyWith(
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.normal,
+              ),
             );
           },
         ),
@@ -207,7 +210,7 @@ class _TunerState extends State<Tuner> {
             sub: (target ~/ 12 + 1).toString(),
             style: TextStyle(
               fontSize: 200,
-              fontWeight: FontWeight.bold,
+              fontWeight: AdaptedFontWeight.bold,
               color: noteColor.withAlpha(64),
             ),
           ),
@@ -219,7 +222,7 @@ class _TunerState extends State<Tuner> {
             style: TextStyle(
               fontSize: 28,
               color: noteColor.withAlpha(64),
-              fontWeight: FontWeight.bold,
+              fontWeight: AdaptedFontWeight.bold,
             ),
           ),
         ),
@@ -520,7 +523,7 @@ class _TunerState extends State<Tuner> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(name, style: TextStyle(fontWeight: AdaptedFontWeight.bold)),
           ...notes.map((note) {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2.0),

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../utils/action.dart';
 import '../config.dart';
+import '../theme.dart';
 
 const clientId = 'Ov23liiGDLj2Or7Mk7mi';
 const scope = 'public_repo';
@@ -377,7 +378,10 @@ class _GitHubLoginState extends State<GitHubLogin> {
         ),
         Text(
           _deviceAuth.userCode,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: AdaptedFontWeight.bold,
+          ),
         ),
         step2to3UI,
         _buildError(context),

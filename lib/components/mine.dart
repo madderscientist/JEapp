@@ -20,6 +20,12 @@ class Mine extends StatefulWidget {
 }
 
 class _MineState extends State<Mine> {
+  static final _headerTextStyle = TextStyle(
+    fontSize: 20,
+    fontWeight: AdaptedFontWeight.bold,
+    color: Colors.black,
+  );
+
   final TextEditingController _controller = TextEditingController();
   List<File> get _allScores => Config.localScores.value;
   late final LazyNotifier<List<int>> filteredScores;
@@ -311,11 +317,7 @@ class _MineState extends State<Mine> {
                                           Text(
                                             userName,
                                             key: ValueKey(userName),
-                                            style: TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.black,
-                                            ),
+                                            style: _headerTextStyle,
                                           ),
                                           smallInfo,
                                         ],
@@ -323,11 +325,7 @@ class _MineState extends State<Mine> {
                                     : Text(
                                         '我的曲谱',
                                         key: ValueKey('mine'),
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black,
-                                        ),
+                                        style: _headerTextStyle,
                                       ),
                               ),
                             ),

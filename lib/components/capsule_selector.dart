@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config.dart';
+import '../theme.dart';
 
 class CapsuleSelector extends StatelessWidget {
   final List<String> items;
@@ -45,7 +46,7 @@ class CapsuleSelector extends StatelessWidget {
                 items[i],
                 style: textTheme.headlineMedium?.copyWith(
                   color: selected ? primaryDark : Colors.black,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: AdaptedFontWeight.bold,
                   fontSize: Config.capsuleFontSize,
                 ),
               ),

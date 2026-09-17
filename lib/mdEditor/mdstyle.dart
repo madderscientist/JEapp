@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import '../theme.dart';
 
 class MdStyle {
   MdStyle._();
 
   static const em = TextStyle(fontStyle: FontStyle.italic);
-  static const strong = TextStyle(fontWeight: FontWeight.bold);
+  static final strong = TextStyle(fontWeight: AdaptedFontWeight.bold);
   static const link = TextStyle(
     color: Colors.blue,
     decoration: TextDecoration.underline,
