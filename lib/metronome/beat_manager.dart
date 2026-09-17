@@ -1,18 +1,27 @@
 import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_soloud/flutter_soloud.dart';
+
 import '../utils/background_service_handler.dart';
-import 'package:just_audio/just_audio.dart';
 import '../utils/lazy_notifier.dart';
+import 'shot_player.dart';
 
 class BeatManager {
   final BackGroundServiceHandler handler;
+  final ShotPlayer player;
+  SoLoud get _soloud => player.soloud;
 
-  Future<void> _init() async {
+  BeatManager({required this.handler, required this.player}) {
     bpmNotifier.addListener(() {
-      bpmInterval = fromBPM(bpmNotifier.value);
+      _reschedule(tempoChanged: true);
       _statusBar();
     });
-    await _initSilencePlayer();
+    player.onBeatSourcesChanged = _reschedule;
+    _deviceErrors = _soloud.audioDeviceStartFailures.listen((error) {
+      _reportFailure(error, StackTrace.current);
+    });
     enableNotifier.addListener(_statusBar);
     handler.playbackQueue.add(play);
     handler.pauseQueue.add(pause);
@@ -21,41 +30,31 @@ class BeatManager {
     handler.seekQueue.add(seek);
   }
 
-  BeatManager({required this.handler, void Function()? onInitialized}) {
-    _init().then((_) => onInitialized?.call());
-  }
-
-  BeatManager._(this.handler);
-
-  static Future<BeatManager> create(BackGroundServiceHandler handler) async {
-    final manager = BeatManager._(handler);
-    await manager._init();
-    return manager;
-  }
-
-  void dispose() {
-    handler.stop();
+  Future<void> dispose() async {
+    if (_disposed) return;
+    final stopped = pause();
+    _disposed = true;
+    player.onBeatSourcesChanged = null;
     handler.playbackQueue.remove(play);
     handler.pauseQueue.remove(pause);
     handler.skipToPreviousQueue.remove(skipToPrevious);
     handler.skipToNextQueue.remove(skipToNext);
     handler.seekQueue.remove(seek);
-    _posSub?.cancel();
-    _silencePlayer.dispose();
-    bpmNotifier.dispose();
-    enableNotifier.dispose();
-    _beatController.close();
+    try {
+      await Future.wait([stopped, handler.stop(), _deviceErrors.cancel()]);
+    } finally {
+      bpmNotifier.dispose();
+      enableNotifier.dispose();
+      await _beatController.close();
+    }
   }
 
   /// bpm管理 外界应该用bpm的getter和setter
   final LazyNotifier<int> bpmNotifier = LazyNotifier<int>(120);
-  Duration bpmInterval = fromBPM(120);
   int get bpm => bpmNotifier.value;
   set bpm(int newBPM) => bpmNotifier.value = newBPM.clamp(bpmMin, bpmMax);
   static const int bpmMax = 400;
   static const int bpmMin = 10;
-  static Duration fromBPM(int bpm) =>
-      Duration(milliseconds: (60000 / bpm).round());
 
   /// 节拍产生开关 外界应该用enable的getter和setter
   /// enableNotifier在play和pause中修改，其他地方不允许修改
@@ -63,39 +62,121 @@ class BeatManager {
   bool get enable => enableNotifier.value;
   set enable(bool value) => value ? play() : pause();
 
-  /// 静音播放器 用于计时产生beat
-  final AudioPlayer _silencePlayer = AudioPlayer();
-  StreamSubscription<Duration>? _posSub; // 管理beat回调
+  static const _lead = Duration(milliseconds: 50);
+  static const _ahead = Duration(milliseconds: 1500);
+  Timer? _timer;
+  late final StreamSubscription<Object> _deviceErrors;
+  bool _disposed = false;
+  List<int> _pattern = [3, 1, 2, 1];
+  bool _muted = false;
+  int currentBeat = 0;
+  int _nextIndex = 0;
+  double _nextMicros = 0;
+  final _pending = <({Duration time, int index})>[];
+  final _voices = <SoundHandle, Duration>{};
+
   // 事件桥梁，用stream传递beat事件
   final StreamController<void> _beatController =
       StreamController<void>.broadcast();
   Stream<void> get beatStream => _beatController.stream;
-  // 初始化静音播放器
-  Future<void> _initSilencePlayer() async {
-    await _silencePlayer.setAudioSource(
-      // SilenceAudioSource 只支持android而且有bug，所以用实际音频+静音
-      AudioSource.asset('assets/metronome/silent.aac'),
-    );
-    await _silencePlayer.setLoopMode(LoopMode.one);
-    await _silencePlayer.setVolume(0); // 手动静音不会被杀，音频为0会被杀
+
+  /// 配置只在编辑时复制，定时检查不读取页面对象
+  void configure(Iterable<int> pattern, {required bool muted}) {
+    if (_disposed) return;
+    _pattern = List.of(pattern);
+    assert(_pattern.isNotEmpty && _pattern.length <= 16);
+    assert(_pattern.every((level) => level >= 0 && level <= 3));
+    _muted = muted;
+    _reschedule();
+    if (_nextIndex >= _pattern.length) _nextIndex = 0;
   }
 
-  /// beat通知
-  DateTime? _lastBeatTime; // 上次节拍的时间点 之所以不用Duration pos是因为loop切换的时候不稳定
-  void _onPosition(Duration pos) async {
-    final now = DateTime.now();
-    if (_lastBeatTime == null) {
-      _lastBeatTime = now;
-    } else {
-      final interval = now.difference(_lastBeatTime!);
-      if (interval < bpmInterval) return;
-      // 考虑到系统卡顿，可能空了好多拍
-      _lastBeatTime = _lastBeatTime!.add(
-        bpmInterval * (interval.inMilliseconds ~/ bpmInterval.inMilliseconds),
-      );
+  /// 发声由原生引擎定时；轮询只刷新当前拍号并补充有限的未来拍点
+  void _tick() {
+    if (_disposed || !enable) return;
+    final now = _soloud.getEngineTime();
+    _advance(now);
+    _voices.removeWhere((handle, _) => !_soloud.getIsValidVoiceHandle(handle));
+    final interval = 60000000 / bpm;
+    // 超过预排窗口时跳过错过的声音，保持原时间轴，不立即补播
+    if (_nextMicros < now.inMicroseconds) {
+      final skipped =
+          ((now.inMicroseconds + _lead.inMicroseconds - _nextMicros) / interval)
+              .ceil();
+      _nextMicros += skipped * interval;
+      _nextIndex = (_nextIndex + skipped) % _pattern.length;
     }
-    if (_beatController.isClosed) return;
+    final horizon = now + _ahead;
+    while (_pending.isEmpty || _nextMicros <= horizon.inMicroseconds) {
+      final time = Duration(microseconds: _nextMicros.round());
+      final handle = player.scheduleBeat(
+        _muted ? 0 : _pattern[_nextIndex],
+        time,
+      );
+      if (handle != null) _voices[handle] = time;
+      _pending.add((time: time, index: _nextIndex));
+      _nextMicros += interval;
+      _nextIndex = (_nextIndex + 1) % _pattern.length;
+    }
+  }
+
+  void _advance(Duration now) {
+    var count = 0;
+    while (count < _pending.length && _pending[count].time <= now) {
+      currentBeat = _pending[count].index;
+      count++;
+    }
+    if (count == 0) return;
+    _pending.removeRange(0, count);
+    // 卡顿后仅通知最新一拍，避免动画与震动连续补发
     _beatController.add(null);
+  }
+
+  Future<void> _cancelSounds({Duration? after}) {
+    final handles = _voices.entries
+        .where((entry) => after == null || entry.value > after)
+        .map((entry) => entry.key)
+        .toList();
+    for (final handle in handles) {
+      _voices.remove(handle);
+    }
+    return Future.wait(handles.map(_soloud.stop));
+  }
+
+  void _reschedule({bool tempoChanged = false}) {
+    if (_disposed || !enable) return;
+    final now = _soloud.getEngineTime();
+    _advance(now);
+    if (_pending.isNotEmpty) {
+      _nextIndex = _pending.first.index;
+      _nextMicros = _pending.first.time.inMicroseconds.toDouble();
+    }
+    if (_nextIndex >= _pattern.length) _nextIndex = 0;
+    if (tempoChanged) _nextMicros = now.inMicroseconds + 60000000 / bpm;
+    _pending.clear();
+    unawaited(
+      _cancelSounds(after: _muted ? null : now).catchError(_reportFailure),
+    );
+    _poll();
+  }
+
+  void _poll() {
+    try {
+      _tick();
+    } catch (error, stack) {
+      _reportFailure(error, stack);
+    }
+  }
+
+  void _reportFailure(Object error, StackTrace stack) {
+    unawaited(pause().catchError(_logError));
+    _logError(error, stack);
+  }
+
+  static void _logError(Object error, StackTrace stack) {
+    FlutterError.reportError(
+      FlutterErrorDetails(exception: error, stack: stack),
+    );
   }
 
   /// 通知栏Card管理，将bpm映射为进度
@@ -140,20 +221,32 @@ class BeatManager {
 
   /// 和通知栏Card联动的重载 需要注册到handler中
   Future<void> play() async {
+    if (_disposed || enable) return;
     enableNotifier.value = true;
-    _lastBeatTime = null;
-    _posSub?.cancel();
-    _posSub = _silencePlayer.positionStream.listen(_onPosition);
-    await _silencePlayer.play();
-    _onPosition(_silencePlayer.position);
+    try {
+      _soloud.setAudioDeviceIdleTimeout(null);
+      _nextMicros = (_soloud.getEngineTime() + _lead).inMicroseconds.toDouble();
+      _timer = Timer.periodic(const Duration(milliseconds: 20), (_) => _poll());
+      _poll();
+    } catch (error, stack) {
+      _reportFailure(error, stack);
+    }
   }
 
   Future<void> pause() async {
+    if (_disposed || !enable) return;
+    if (_soloud.isInitialized) _advance(_soloud.getEngineTime());
+    if (_pending.isNotEmpty) _nextIndex = _pending.first.index;
+    _pending.clear();
+    _timer?.cancel();
+    _timer = null;
     enableNotifier.value = false;
-    _posSub?.cancel();
-    _posSub = null;
-    await _silencePlayer.pause();
-    await _silencePlayer.seek(Duration.zero);
+    if (_soloud.isInitialized) {
+      _soloud.setAudioDeviceIdleTimeout(const Duration(milliseconds: 500));
+      await _cancelSounds();
+    } else {
+      _voices.clear();
+    }
   }
 
   Future<void> skipToPrevious() async => bpm = bpm - 1;

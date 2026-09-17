@@ -47,7 +47,6 @@ dependencies:
   share_plus: ^13.3.0
   cached_network_image: ^4.0.0
   wakelock_plus: ^1.8.0
-  just_audio: ^0.10.6
   audio_service: ^0.18.19
   flutter_soloud: ^5.1.1
   dart_melty_soundfont: ^2.0.0

@@ -1,7 +1,9 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+
 import '../theme.dart';
 import '../utils/lazy_notifier.dart';
 import '../utils/background_service_handler.dart';
@@ -14,8 +16,6 @@ import '../components/temp_textarea.dart' show TempTextArea;
 
 class Metronome extends StatefulWidget {
   const Metronome({super.key});
-  static const int bpmMax = 400;
-  static const int bpmMin = 10;
 
   @override
   State<Metronome> createState() => _MetronomeState();
@@ -42,12 +42,7 @@ class _MetronomeState extends State<Metronome> {
   LazyNotifier<bool> vibrateNotifier = LazyNotifier<bool>(false);
 
   // 节奏型 4种状态 静音为0 数字越大越重
-  final LazyNotifier<List<LazyNotifier<int>>> beatLevels = LazyNotifier([
-    LazyNotifier<int>(3),
-    LazyNotifier<int>(1),
-    LazyNotifier<int>(2),
-    LazyNotifier<int>(1),
-  ]);
+  final LazyNotifier<List<int>> beatLevels = LazyNotifier([3, 1, 2, 1]);
   final LazyNotifier<int> _beatCnt = LazyNotifier<int>(0);
 
   // 是否展开panel
@@ -57,25 +52,41 @@ class _MetronomeState extends State<Metronome> {
   void initState() {
     super.initState();
     WakelockPlus.enable();
-    // 播放器初始化 & BeatManager初始化(包括AudioService初始化)
-    Future.wait([
-      ShotPlayer.create().then((p) => player = p),
-      BackGroundServiceHandler.getAudioServiceHandler()
-          .then((handler) => BeatManager.create(handler))
-          .then((manager) => _manager = manager),
-    ]).then((_) {
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    player = await ShotPlayer.create();
+    try {
+      final handler = await BackGroundServiceHandler.getAudioServiceHandler();
+      if (!mounted) {
+        await player.dispose();
+        return;
+      }
+      _manager = BeatManager(handler: handler, player: player);
+      beatLevels.addListener(_updatePattern);
+      muteNotifier.addListener(_updatePattern);
+      _updatePattern();
       _beatSub = _manager.beatStream.listen(_onBeat);
       setState(() => initialized = true);
-    });
+    } catch (_) {
+      await player.dispose();
+      rethrow;
+    }
+  }
+
+  void _updatePattern() {
+    _manager.configure(
+      beatLevels.value,
+      muted: muteNotifier.value,
+    );
   }
 
   void _onBeat(void _) {
+    if (!mounted) return;
+    _beatCnt.setValue(_manager.currentBeat);
     _beatCnt.notify();
     if (vibrateNotifier.value) HapticFeedback.heavyImpact();
-    if (!muteNotifier.value) {
-      player.beat(beatLevels.value[_beatCnt.value].value);
-    }
-    _beatCnt.setValue((_beatCnt.value + 1) % beatLevels.value.length);
   }
 
   // beatCircle滚动音效与节拍变化
@@ -94,11 +105,7 @@ class _MetronomeState extends State<Metronome> {
     WakelockPlus.disable();
     if (initialized) {
       _beatSub.cancel();
-      player.dispose();
-      _manager.dispose();
-    }
-    for (final notifier in beatLevels.value) {
-      notifier.dispose();
+      unawaited(_manager.dispose().whenComplete(player.dispose));
     }
     beatLevels.dispose();
     muteNotifier.dispose();
@@ -140,9 +147,6 @@ class _MetronomeState extends State<Metronome> {
                     GestureDetector(
                       onTap: () {
                         _manager.enable = !_manager.enable;
-                        if (_manager.enable == false) {
-                          _beatCnt.setValue(0); // 不要触发
-                        }
                       },
                       onLongPress: _typeInBPM,
                       child: ValueListenableBuilder<int>(
@@ -274,24 +278,22 @@ class _MetronomeState extends State<Metronome> {
     return Column(
       spacing: 6,
       children: [
-        ValueListenableBuilder<List<LazyNotifier<int>>>(
+        ValueListenableBuilder<List<int>>(
           valueListenable: beatLevels,
           builder: (context, value, child) {
             return Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(value.length, (i) {
-                return ValueListenableBuilder<int>(
-                  valueListenable: value[i],
-                  builder: (context, level, child) {
-                    return BeatLevel(
-                      id: i,
-                      level: level,
-                      onTap: (newLevel) => value[i].value = newLevel,
-                      beatTick: _beatCnt,
-                    );
+                return BeatLevel(
+                  id: i,
+                  level: value[i],
+                  onTap: (newLevel) {
+                    value[i] = newLevel;
+                    beatLevels.notify();
                   },
+                  beatTick: _beatCnt,
                 );
-              }).toList(),
+              }),
             );
           },
         ),
@@ -301,13 +303,8 @@ class _MetronomeState extends State<Metronome> {
             IconButton(
               onPressed: () {
                 if (beatLevels.value.length <= 1) return;
-                final last = beatLevels.value.last;
                 beatLevels.value.removeLast();
                 beatLevels.notify();
-                last.dispose(); // 释放资源
-                if (_beatCnt.value >= beatLevels.value.length) {
-                  _beatCnt.setValue(0); // 重置计数
-                }
               },
               icon: Icon(Icons.remove),
             ),
@@ -328,7 +325,7 @@ class _MetronomeState extends State<Metronome> {
             IconButton(
               onPressed: () {
                 if (beatLevels.value.length >= 16) return;
-                beatLevels.value.add(LazyNotifier<int>(2));
+                beatLevels.value.add(2);
                 beatLevels.notify();
               },
               icon: Icon(Icons.add),
@@ -392,18 +389,6 @@ class _MetronomeState extends State<Metronome> {
     return ValueListenableBuilder<int>(
       valueListenable: player.beatGroupNotifier,
       builder: (context, group, child) {
-        String groupName;
-        switch (group) {
-          case 1:
-            groupName = '音效2';
-            break;
-          case 2:
-            groupName = '音效3';
-            break;
-          default:
-            groupName = '音效1';
-            break;
-        }
         return ElevatedButton(
           onPressed: () {
             player.beatGroup = group + 1;
@@ -413,7 +398,7 @@ class _MetronomeState extends State<Metronome> {
               EdgeInsets.symmetric(horizontal: 10),
             ),
           ),
-          child: Text(groupName),
+          child: Text('音效${group + 1}'),
         );
       },
     );
