@@ -99,7 +99,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           _bgImageNotifier.value = img;
         })
         .catchError((_) {
-          if (context.mounted) {
+          if (mounted) {
             toastification.show(
               context: context,
               type: ToastificationType.error,

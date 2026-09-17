@@ -1,6 +1,13 @@
 # 从0开始的Flutter开发
 自然会遇到不少问题，记录在下
 
+## Flutter 3.47 升级记录（2026-09-17）
+- 使用系统 Flutter 3.47.4 / Dart 3.13.3；其他项目的 FVM 配置不变。
+- 除 permission_handler 外，直接依赖及开发依赖已更新到最新稳定版，版本固定在 pubspec.lock。为兼容 compileSdk 36，permission_handler 回退到 12.0.3，Android 实现解析为 13.0.1；不包含 14.1.0 的权限状态修复。间接依赖遵循上游约束，不使用 dependency_overrides 强制升级。
+- Android 使用 AGP 9.1.0、Gradle 9.3.1、Kotlin 2.4.0、Java 编译目标 17。compileSdk 和 targetSdk 均跟随 Flutter 默认值，当前为 36，minSdk 为 24。
+- image_gallery_saver_plus 5.1.1 仍依赖旧 Kotlin 插件，因此保留 Flutter 自动加入的 builtInKotlin/newDsl 兼容开关。AGP 10 或后续 Flutter 升级前需重新检查该插件支持情况。
+- SoLoud 5 的 play 返回同步 SoundHandle；音效封装和流播放调用已适配。release 保留 R8 和资源压缩，移除了不存在的自定义 ProGuard 文件引用。
+
 ## github issue 请求
 在page大的时候会报错：
 ```

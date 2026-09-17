@@ -80,7 +80,7 @@ class AudioContext {
     // 第一次要喂满 不然不会开始
     initialFeed();
 
-    handle = await SoLoud.instance.play(stream!);
+    handle = SoLoud.instance.play(stream!);
     _check = Timer.periodic(
       Duration(microseconds: fillBufferMicroseconds ~/ 3),
       (_) {

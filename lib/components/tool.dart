@@ -44,8 +44,9 @@ class Tool extends StatelessWidget {
   static Future<void> openPanel(BuildContext context) async {
     if (_isRouteInStack(context, '/panel')) return;
     _isNavigating = true;
+    final Future<void> navigation;
     try {
-      return Navigator.push(
+      navigation = Navigator.push(
         context,
         MaterialPageRoute(
           settings: const RouteSettings(name: '/panel'),
@@ -63,13 +64,15 @@ class Tool extends StatelessWidget {
     } finally {
       Future.microtask(() => _isNavigating = false);
     }
+    return navigation;
   }
 
   static Future<void> openTuner(BuildContext context) async{
     if (_isRouteInStack(context, '/tuner')) return;
     _isNavigating = true;
+    final Future<void> navigation;
     try {
-      return Navigator.push(
+      navigation = Navigator.push(
         context,
         MaterialPageRoute(
           settings: const RouteSettings(name: '/tuner'),
@@ -82,13 +85,15 @@ class Tool extends StatelessWidget {
     } finally {
       Future.microtask(() => _isNavigating = false);
     }
+    return navigation;
   }
 
   static Future<void> openMetronome(BuildContext context) async {
     if (_isRouteInStack(context, '/metronome')) return;
     _isNavigating = true;
+    final Future<void> navigation;
     try {
-      return Navigator.push(
+      navigation = Navigator.push(
         context,
         MaterialPageRoute(
           settings: const RouteSettings(name: '/metronome'),
@@ -100,6 +105,7 @@ class Tool extends StatelessWidget {
     } finally {
       Future.microtask(() => _isNavigating = false);
     }
+    return navigation;
   }
 
   static bool _isRouteInStack(BuildContext context, String routeName) {

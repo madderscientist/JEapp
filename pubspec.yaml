@@ -19,7 +19,8 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.6+6
 
 environment:
-  sdk: ^3.8.1
+  sdk: ^3.13.0
+  flutter: '>=3.47.0'
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -31,29 +32,29 @@ dependencies:
   flutter:
     sdk: flutter
 
-  shared_preferences: ^2.5.3
-  markdown: ^7.3.0
-  html: ^0.15.6
+  shared_preferences: ^2.5.5
+  markdown: ^7.3.1
+  html: ^0.15.7
   url_launcher: ^6.3.2
-  toastification: ^3.0.3
-  image_gallery_saver_plus: ^4.0.1
-  image_picker: ^1.2.0
-  permission_handler: ^12.0.1
-  http: ^1.5.0
-  path_provider: ^2.1.5
+  toastification: ^3.2.0
+  image_gallery_saver_plus: ^5.1.1
+  image_picker: ^1.2.3
+  permission_handler: ^12.0.3
+  http: ^1.6.0
+  path_provider: ^2.1.6
   path: ^1.9.1
   flutter_slidable: ^4.0.3
-  share_plus: ^12.0.0
-  cached_network_image: ^3.4.1
-  wakelock_plus: ^1.4.0
-  just_audio: ^0.10.5
-  audio_service: ^0.18.18
-  flutter_soloud: ^3.4.6
+  share_plus: ^13.3.0
+  cached_network_image: ^4.0.0
+  wakelock_plus: ^1.8.0
+  just_audio: ^0.10.6
+  audio_service: ^0.18.19
+  flutter_soloud: ^5.1.1
   dart_melty_soundfont: ^2.0.0
-  record: ^6.1.2
-  quick_actions: ^1.1.0
-  package_info_plus: ^9.0.0
-  device_info_plus: ^12.3.0
+  record: ^7.1.1
+  quick_actions: ^1.1.1
+  package_info_plus: ^10.2.1
+  device_info_plus: ^13.2.0
 
 dev_dependencies:
   flutter_test:
@@ -65,7 +66,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-  flutter_native_splash: ^2.4.6
+  flutter_native_splash: ^2.4.8
   flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the

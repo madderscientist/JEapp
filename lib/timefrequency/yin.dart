@@ -58,7 +58,7 @@ class YIN {
 
   /// input.length = frameSize
   /// 负数表示未找到符合条件的音高
-  double getPitch(final List<double> input) {
+  double getPitch(List<double> input) {
     _applyBandPassInPlace(input);
     difference(input);
     cumulativeMeanNormalizedDifference();
@@ -87,7 +87,7 @@ class YIN {
   }
 
   /// 原论文实现的 slowDifference: 时域算法
-  void difference(final List<double> input) {
+  void difference(List<double> input) {
     buffer[0] = 0;
     for (int tau = 1; tau < buffer.length; tau++) {
       buffer[tau] = 0;

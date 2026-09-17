@@ -71,7 +71,7 @@ class SynthContext {
     );
     currentTime += maxBufferSize / sampleRate;
 
-    handle = await SoLoud.instance.play(stream!);
+    handle = SoLoud.instance.play(stream!);
 
     _check = Timer.periodic(
       Duration(microseconds: fillBufferMicroseconds ~/ 2.5),

@@ -19,7 +19,7 @@ class Ring {
     );
     SoLoud.instance.setWaveformFreq(toneSource!, frequency);
     if (!isPlaying) {
-      handle = await SoLoud.instance.play(toneSource!);
+      handle = SoLoud.instance.play(toneSource!);
     }
     isRinging.value = true;
   }

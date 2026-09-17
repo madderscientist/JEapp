@@ -27,10 +27,10 @@ class ShotPlayer {
     return player;
   }
 
-  Future<SoundHandle> tap() => soloud.play(sources[0]);
-  Future<SoundHandle> rollInRange() => soloud.play(sources[1]);
-  Future<SoundHandle> rollOverRange() => soloud.play(sources[2]);
-  Future<SoundHandle>? beat([int intensity = 1]) {
+  SoundHandle tap() => soloud.play(sources[0]);
+  SoundHandle rollInRange() => soloud.play(sources[1]);
+  SoundHandle rollOverRange() => soloud.play(sources[2]);
+  SoundHandle? beat([int intensity = 1]) {
     if (intensity == 0) return null;
     return soloud.play(beatSources[intensity - 1]);
   }

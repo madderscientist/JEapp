@@ -7,10 +7,9 @@ class AudioParam extends Connectable with SI {
   final double _min;
   final double _max;
   AudioParam(this.value, {
-    double min = double.negativeInfinity,
-    double max = double.infinity,
-  })  : _min = min,
-        _max = max;
+    this._min = double.negativeInfinity,
+    this._max = double.infinity,
+  });
 
   @override
   double get currentValue => (value + (from?.currentValue ?? 0)).clamp(_min, _max);
