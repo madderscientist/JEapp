@@ -43,6 +43,7 @@ class IsolateSynthesizer {
   SendPort? workerSendPort;
   List<Preset>? presets;
   void Function(dynamic)? onReceive;
+  bool _disposing = false;
 
   IsolateSynthesizer._() {
     _init();
@@ -60,29 +61,43 @@ class IsolateSynthesizer {
         channels: Channels.mono,
       );
     }
-    Isolate.spawn<_IsolateIniter>(
+    Isolate.spawn<SendPort>(
       IsolateSynthesizer._synthWorker,
-      _IsolateIniter(receivePort.sendPort, RootIsolateToken.instance!),
+      receivePort.sendPort,
     );
     receivePort.listen((message) {
       if (message is SendPort) {
-        if (workerSendPort == null) {
-          workerSendPort = message;
-          synthesizerLoading.then((bytes) {
-            workerSendPort!.send(bytes);
-            workerSendPort!.send(GetPreset());
-          });
+        workerSendPort = message;
+        if (_disposing) {
+          message.send(DisposeAudio());
+          return;
         }
-      } else if (message is List<Preset>) {
-        presets = message;
-        onReceive?.call(presets); // 可以使用合成器了
-      } else {
+        synthesizerLoading.then((bytes) {
+          if (_disposing) return;
+          message.send(bytes);
+          message.send(GetPreset());
+        });
+      } else if (message is DisposeAudio) {
+        // 后台已停止补音并释放音源，再由初始化引擎的主线程完成清理
+        SoLoud.instance.deinit();
+        receivePort.close();
+        workerSendPort = null;
+        presets = null;
+        onReceive = null;
+        if (identical(_instance, this)) _instance = null;
+      } else if (!_disposing) {
+        if (message is List<Preset>) presets = message; // 可以使用合成器了
         onReceive?.call(message); // 发出的指令都有回音
       }
     });
   }
 
   void send(AudioCommand command) {
+    if (_disposing) return;
+    if (command is DisposeAudio) {
+      _disposing = true;
+      onReceive = null;
+    }
     workerSendPort?.send(command);
   }
 
@@ -99,22 +114,13 @@ class IsolateSynthesizer {
   /// This method should NOT be called manually.
   @Deprecated('全局单例不应主动dispose')
   static void dispose() {
-    if (_instance == null) return;
-    _instance!
-      ..workerSendPort?.send(DisposeAudio())
-      ..receivePort.close()
-      ..workerSendPort = null
-      ..presets = null
-      ..onReceive = null;
-    _instance = null;
+    _instance?.send(DisposeAudio());
   }
 
-  static void _synthWorker(_IsolateIniter init) async {
-    // 不然SoLoud会报错 但即使调用了也不能用 rootBundle (只能在主Isolate中用)
-    BackgroundIsolateBinaryMessenger.ensureInitialized(init.rootIsolateToken);
+  static void _synthWorker(SendPort sendPort) async {
     SynthContext ctx = SynthContext.instance;
     final ReceivePort workerPort = ReceivePort();
-    init.sendPort.send(workerPort.sendPort);
+    sendPort.send(workerPort.sendPort);
     // 用for代替listen使得事件有顺序
     await for (final msg in workerPort) {
       switch (msg) {
@@ -126,7 +132,7 @@ class IsolateSynthesizer {
           break;
         case DisposeAudio():
           await ctx.stop();
-          SoLoud.instance.deinit();
+          sendPort.send(msg);
           workerPort.close();
           return;
         case PlayNote():
@@ -148,7 +154,7 @@ class IsolateSynthesizer {
           break;
         case GetPreset():
           List<Preset> p = ctx.synthesizer?.soundFont.presets ?? [];
-          init.sendPort.send(p);
+          sendPort.send(p);
           continue;
         case ByteData():
           ctx.initSynthesizer(msg);
@@ -156,13 +162,7 @@ class IsolateSynthesizer {
         default:
           continue;
       }
-      init.sendPort.send(msg); // 回应
+      sendPort.send(msg); // 回应
     }
   }
-}
-
-class _IsolateIniter {
-  SendPort sendPort;
-  RootIsolateToken rootIsolateToken;
-  _IsolateIniter(this.sendPort, this.rootIsolateToken);
 }

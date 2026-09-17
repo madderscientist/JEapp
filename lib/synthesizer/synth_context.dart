@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
+// ignore: implementation_imports, invalid_use_of_internal_member
+import 'package:flutter_soloud/src/enums.dart' show PlayerErrors;
 import 'package:dart_melty_soundfont/dart_melty_soundfont.dart';
-import '../config.dart';
 
-/// 控制合成于输出 可以在任意线程使用
+/// 控制合成与输出；共享引擎需先在主线程初始化
 class SynthContext {
   // 全局单例，访问才初始化 被 SoLoud 的唯一 released BufferStream 传染
   static SynthContext? _instance;
@@ -20,6 +21,8 @@ class SynthContext {
     : fillBufferMicroseconds = (1e6 / sampleRate * fillBufferSize).toInt();
 
   Synthesizer? synthesizer;
+  // ignore: experimental_member_use
+  final _soloud = SoLoudIsolate.instance.bindings;  // 直接控制底层
 
   /// 初始化合成器 需要外界调用
   /// [bytes] SoundFont 文件数据 只能是 sf2
@@ -41,78 +44,96 @@ class SynthContext {
   int get maxBufferSize => fillBufferSize * 3;
   final _samples = Float32List(fillBufferSize);
   final int fillBufferMicroseconds;
-  AudioSource? stream;
+  SoundHash? stream;
   SoundHandle? handle;
   Timer? _check;
   Future<void> initSoLoudStream() async {
-    // SoLoud 初始化需要 BackgroundIsolateBinaryMessenger.ensureInitialized
-    // 在主Isolate中不需要特意调用，但在Isolate中需要
-    // 否则报错：Bad state: The BackgroundIsolateBinaryMessenger.instance value is invalid until BackgroundIsolateBinaryMessenger.ensureInitialized is executed.
-    // 但是非主线程初始化的 SoLoud 不具备 loadAsset 能力(flutter限制) 尽量在主线程初始化
-    await Config.initSoLoud();
-    stop();
-    stream = SoLoud.instance.setBufferStream(
-      bufferingType: BufferingType.released,
-      maxBufferSizeBytes: maxBufferSize * Float32List.bytesPerElement,
-      bufferingTimeNeeds: 0,
-      sampleRate: sampleRate,
-      channels: Channels.mono,
-      format: BufferType.f32le,
+    // 使用共享原生引擎，不在后台重新初始化或接管主线程回调。
+    await stop();
+    final result = _soloud.setBufferStream(
+      (maxBufferSize + fillBufferSize) * Float32List.bytesPerElement,
+      BufferingType.released,
+      0,
+      sampleRate,
+      Channels.mono.count,
+      BufferType.f32le.value,
+      null,
+      null,
     );
+    // ignore: invalid_use_of_internal_member
+    if (result.error != PlayerErrors.noError) {
+      throw SoLoudCppException.fromPlayerError(result.error);
+    }
+    stream = result.soundHash;
   }
 
   Future<void> start() async {
     if (stream == null) await initSoLoudStream();
 
-    // 第一次要喂满 不然不会开始
-    SoLoud.instance.addAudioDataStream(
-      stream!,
+    // 预填三块静音；第四块容量留给原生缓冲的延迟回收
+    final error = _soloud.addAudioDataStream(
+      stream!.hash,
       Float32List(maxBufferSize).buffer.asUint8List(),
     );
+    // ignore: invalid_use_of_internal_member
+    if (error != PlayerErrors.noError) {
+      throw SoLoudCppException.fromPlayerError(error);
+    }
     currentTime += maxBufferSize / sampleRate;
 
-    handle = SoLoud.instance.play(stream!);
-
+    final result = _soloud.play(stream!);
+    // ignore: invalid_use_of_internal_member
+    if (result.error != PlayerErrors.noError) {
+      throw SoLoudCppException.fromPlayerError(result.error);
+    }
+    handle = result.newHandle;
     _check = Timer.periodic(
       Duration(microseconds: fillBufferMicroseconds ~/ 2.5),
-      (_) {
-        final playedTime = SoLoud.instance.getStreamTimeConsumed(stream!);
-        if (currentTime * 1e6 - playedTime.inMicroseconds <
-            fillBufferMicroseconds) {
-          feed();
-        }
-      },
+      (_) => feed(),
     );
   }
 
   Future<void> stop() async {
-    final waits = <Future<void>>[];
-    if (handle != null) {
-      waits.add(SoLoud.instance.stop(handle!));
-      handle = null;
-    }
-    if (stream != null) {
-      waits.add(SoLoud.instance.disposeSource(stream!));
-      stream = null;
-    }
-    synthesizer?.noteOffAll();
+    // 补音和释放在同一 isolate 顺序执行；释放音源会同时停止其句柄
     _check?.cancel();
     _check = null;
+    if (stream != null) {
+      _soloud.disposeSound(stream!);
+      stream = null;
+    }
+    handle = null;
+    synthesizer?.noteOffAll();
     currentTime = 0;
-    await Future.wait(waits);
   }
 
-  // dispose 只需要在stop的基础上 SoLoud.instance.deinit 不写
+  // 只释放自己的流，不关闭主线程初始化的共享引擎
 
   void feed() {
-    if (stream == null || synthesizer == null) return;
-    currentTime += fillBufferSize / sampleRate;
-    synthesizer?.render(_samples, _samples);
+    final soundHash = stream;
+    if (soundHash == null || synthesizer == null) return;
     try {
-      SoLoud.instance.addAudioDataStream(
-        stream!,
-        _samples.buffer.asUint8List(),
-      );
+      // 欠载后的第一次写入可能暂停音源，第二次写入恢复播放
+      // 最多补两块，保持原水位，并让音符和停止命令有机会执行
+      for (var remaining = 2; remaining > 0; remaining--) {
+        final buffered = _soloud.getBufferSize(soundHash);
+        // ignore: invalid_use_of_internal_member
+        if (buffered.error != PlayerErrors.noError) {
+          throw SoLoudCppException.fromPlayerError(buffered.error);
+        }
+        if (buffered.sizeInBytes > fillBufferSize * Float32List.bytesPerElement) {
+          break;
+        }
+        synthesizer!.render(_samples, _samples);
+        final error = _soloud.addAudioDataStream(
+          soundHash.hash,
+          _samples.buffer.asUint8List(),
+        );
+        // ignore: invalid_use_of_internal_member
+        if (error != PlayerErrors.noError) {
+          throw SoLoudCppException.fromPlayerError(error);
+        }
+        currentTime += fillBufferSize / sampleRate;
+      }
     } catch (e) {
       if (kDebugMode) {
         print('@feed error: $e');
