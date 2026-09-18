@@ -126,7 +126,17 @@ class _MineState extends State<Mine> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('发布到谱库'),
-        content: const Text('请确认曲谱没有重复'),
+        content: const Text.rich(
+          TextSpan(
+            text: '请确认曲谱没有重复\n',
+            children: [
+              TextSpan(
+                text: '不能用于更新已发布的曲谱',
+                style: TextStyle(color: Colors.red),
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),

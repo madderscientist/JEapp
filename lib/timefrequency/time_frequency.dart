@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
+
 import 'yin.dart';
 import 'nopeak.dart';
 import 'latest_array.dart';
@@ -33,10 +35,13 @@ class TimeFrequency extends StatefulWidget {
 }
 
 class _TimeFrequencyState extends State<TimeFrequency>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   static const int sampleRate = 22050; // 采样率
   final AudioRecorder recorder = AudioRecorder();
   final yin = YIN(frameSize: 2048, sampleRate: sampleRate);
+  StreamSubscription<List<double>>? _audioSubscription;
+  Future<void> _recordingTask = Future<void>.value();
+  bool _visible = false;
 
   late LazyNotifier<LatestArray> pitches; // 控制重绘
 
@@ -145,11 +150,23 @@ class _TimeFrequencyState extends State<TimeFrequency>
     } else {
       yin.threshold = 0.2; // 默认灵敏度
     }
-    _initStream();
+    unawaited(_requestPermission().catchError(_reportRecordingError));
   }
 
-  // 更新 freqs
-  Future<void> _initStream() async {
+  static bool _isVisible(AppLifecycleState? state) =>
+      state == null ||
+      state == AppLifecycleState.resumed ||
+      state == AppLifecycleState.inactive;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final visible = _isVisible(state);
+    if (_visible == visible) return;
+    _visible = visible;
+    _setRecording(visible);
+  }
+
+  Future<void> _requestPermission() async {
     if (await Permission.microphone.request() != PermissionStatus.granted) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -171,6 +188,25 @@ class _TimeFrequencyState extends State<TimeFrequency>
       return;
     }
     if (!mounted) return;
+    WidgetsBinding.instance.addObserver(this);
+    _visible = _isVisible(WidgetsBinding.instance.lifecycleState);
+    _setRecording(_visible);
+  }
+
+  /// 串行启停；保留每次停止请求，隐藏和退出均等待未完成的启动再释放
+  void _setRecording(bool enabled) {
+    _recordingTask = _recordingTask
+        .then((_) async {
+          if (!enabled || !mounted || !_visible) {
+            await _stopStream();
+          } else if (_audioSubscription == null) {
+            await _startStream();
+          }
+        })
+        .catchError(_reportRecordingError);
+  }
+
+  Future<void> _startStream() async {
     // PCM16 但是数据是 Uint8
     final recordStream = await recorder.startStream(
       const RecordConfig(
@@ -179,8 +215,10 @@ class _TimeFrequencyState extends State<TimeFrequency>
         sampleRate: sampleRate,
         autoGain: false,
         noiseSuppress: true,
+        audioInterruption: AudioInterruptionMode.none,
       ),
     );
+    if (!mounted || !_visible) return;
 
     var audioSampleBufferedStream = _bufferedListStream(
       recordStream.map((event) => event.convertPCM16ToFloat()),
@@ -203,18 +241,46 @@ class _TimeFrequencyState extends State<TimeFrequency>
       },
     );
 
-    await for (final audioSample in audioSampleBufferedStream) {
-      final freq = yin.getPitch(audioSample);
-      if (freq > 0) {
-        widget.freqNotifier?.value = freq;
-        nopeak.input(freq);
-      }
-    }
+    _audioSubscription = audioSampleBufferedStream.listen(
+      (audioSample) {
+        if (!mounted || !_visible) return;
+        final freq = yin.getPitch(audioSample);
+        if (freq > 0) {
+          widget.freqNotifier?.value = freq;
+          nopeak.input(freq);
+        }
+      },
+      onError: (Object error, StackTrace stack) {
+        _setRecording(false);
+        _reportRecordingError(error, stack);
+      },
+      cancelOnError: true,
+    );
+  }
+
+  Future<void> _stopStream() async {
+    final subscription = _audioSubscription;
+    _audioSubscription = null;
+    await Future.wait([
+      if (subscription != null) subscription.cancel(),
+      recorder.cancel(),
+    ]);
+  }
+
+  static void _reportRecordingError(Object error, StackTrace stack) {
+    FlutterError.reportError(
+      FlutterErrorDetails(exception: error, stack: stack),
+    );
   }
 
   @override
   void dispose() {
-    recorder.cancel().whenComplete(() => recorder.dispose());
+    WidgetsBinding.instance.removeObserver(this);
+    _visible = false;
+    _setRecording(false);
+    _recordingTask = _recordingTask
+        .whenComplete(recorder.dispose)
+        .catchError(_reportRecordingError);
     pitches.dispose();
     _tempController?.dispose();
     if (widget.normedCenterNotifier == null) {
